@@ -692,7 +692,7 @@ function init(){
         if(c==='obras'&&!S.obras.length&&ME)seedObras();
         if(c==='obras'&&wantOwn&&S.obras.length){const o=obrasSorted().find(o=>o.responsavel===ME);if(o){UI.obra=o.id;saveUI()}wantOwn=false}
         render()},e=>{clearTimeout(t);setBanner('Não foi possível ler os dados ('+e.code+').')}));
-      ref('config/geral').on('value',s=>{CFG=Object.assign({emailCompras:EMAIL_PADRAO},s.val()||{})});
+      ref('config/geral').on('value',s=>{CFG=Object.assign({emailCompras:EMAIL_PADRAO},s.val()||{});if(CFG.msClientId)msalApp().catch(()=>{})});
     }
   });
 }
@@ -1230,10 +1230,12 @@ $('#modal').addEventListener('click',async e=>{
   if(e.target===m||e.target.closest('[data-close]')){closeModal();return}
   const os=e.target.closest('[data-opensol]');
   if(os){e.preventDefault();const s=byId('solicitacoes',os.dataset.opensol);closeModal();if(s){UI.view='solicitacoes';saveUI();render();openSol(s)}return}
+  if(e.target.closest('[data-msout]')){try{const a=msAccount();if(a)await MSAL.logoutPopup({account:a})}catch(x){}closeModal();toast('Outlook desconectado');return}
   if(e.target.closest('[data-logout]')){closeModal();firebase.auth().signOut();return}
   if(e.target.closest('[data-goverba]')){closeModal();UI.view='orcamento';saveUI();render();return}
   const cm=e.target.closest('[data-copymsg]');
   if(cm){if(MODAL_CTX)copyText(MODAL_CTX.msg(readForm(MODAL_CTX.spec,$('#mform'))));return}
+  if(e.target.closest('[data-mailsend]')){enviarOutlook();return}
   if(e.target.closest('[data-mailrich]')){copyRich();return}
   if(e.target.closest('[data-mailopen2]')){openMailto();return}
   const mo=e.target.closest('[data-mailopen]');
@@ -1252,6 +1254,52 @@ $('#modal').addEventListener('click',async e=>{
 
 function markMissing(f){F_SOL.forEach(x=>{if(!x.req)return;const el=f.querySelector(`[name="${x.k}"]`);if(el){const v=el.value.trim();el.classList.toggle('miss',!v);}});const first=f.querySelector('.miss');if(first){first.scrollIntoView({block:'center'});first.focus()}}
 /* ---------- e-mail ---------- */
+/* ---------- Outlook (Microsoft Graph) ---------- */
+let MSAL=null,MSAL_CID=null;
+const outlookOn=()=>!!(CFG.msClientId);
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function msalApp(){
+  if(MSAL&&MSAL_CID===CFG.msClientId)return MSAL;
+  await loadScript('lib/msal-browser.min.js');
+  MSAL=new msal.PublicClientApplication({auth:{clientId:CFG.msClientId,authority:'https://login.microsoftonline.com/'+(CFG.msTenant||'organizations'),redirectUri:location.origin+location.pathname.replace(/[^/]*$/,'')+'blank.html'},cache:{cacheLocation:'localStorage'}});
+  if(MSAL.initialize)await MSAL.initialize();
+  MSAL_CID=CFG.msClientId;return MSAL;
+}
+async function msToken(interactive=true){
+  const app=await msalApp();const req={scopes:['Mail.Send','User.Read']};
+  const acc=app.getAllAccounts()[0];
+  if(acc){try{return (await app.acquireTokenSilent(Object.assign({account:acc},req))).accessToken}catch(e){if(!interactive)throw e}}
+  if(!interactive)throw new Error('not_connected');
+  const r=await app.acquireTokenPopup(Object.assign({prompt:'select_account'},req));
+  return r.accessToken;
+}
+function msAccount(){try{return MSAL&&MSAL.getAllAccounts()[0]}catch(e){return null}}
+async function anexosGraph(list){
+  const out=[];let total=0;
+  for(const a of list||[]){
+    if(!a.db)continue;
+    try{const m=(await ref(`arquivos/${a.id}/meta`).once('value')).val();if(!m||m.tam>3*1024*1024||total+m.tam>3*1024*1024)continue;
+      const ps=(await ref(`arquivos/${a.id}/p`).once('value')).val()||{};
+      out.push({'@odata.type':'#microsoft.graph.fileAttachment',name:m.nome,contentType:m.tipo,contentBytes:Array.from({length:m.partes},(_,i)=>ps[i]||'').join('')});total+=m.tam}catch(e){}
+  }
+  return out;
+}
+async function enviarOutlook(){
+  const c=MODAL_CTX&&MODAL_CTX.mail;if(!c)return;
+  const to=$('#mto').value.split(/[,;]\s*/).map(x=>x.trim()).filter(Boolean),subject=$('#msub').value;
+  if(!to.length){toast('Informe o destinatário.');return}
+  const btn=$('[data-mailsend]');if(btn){btn.disabled=true;btn.textContent='Enviando…'}
+  try{
+    const tk=await msToken(true);
+    const attachments=await anexosGraph(MAIL_ANX);
+    const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},
+      body:JSON.stringify({message:{subject,body:{contentType:'HTML',content:c.html},toRecipients:to.map(a=>({emailAddress:{address:a}})),attachments},saveToSentItems:true})});
+    if(!r.ok){const t=await r.text();throw new Error('Graph '+r.status+': '+t.slice(0,160))}
+    c.onOpen&&c.onOpen(true);closeModal();toast(`✓ E-mail enviado pelo Outlook para ${to.join(', ')}${attachments.length?` com ${attachments.length} anexo(s)`:''}`);
+  }catch(e){console.error(e);if(btn){btn.disabled=false;btn.textContent='✉ Enviar pelo Outlook'}
+    const m=String(e&&(e.errorCode||e.message)||e);
+    toast(/user_cancelled|popup_window_error|BrowserAuthError: popup/i.test(m)?'Login cancelado ou pop-up bloqueado — libere pop-ups para o site.':/AADSTS65001|consent/i.test(m)?'Falta o consentimento da permissão Mail.Send no portal da Microsoft.':/AADSTS50011|redirect/i.test(m)?'Endereço de retorno não cadastrado no portal da Microsoft.':'Não foi possível enviar: '+m.slice(0,120));}
+}
 /* modelo de e-mail: blocos -> texto simples e HTML */
 const LN='────────────────────────────────';
 function mailText(d){
@@ -1297,9 +1345,9 @@ function openMail({title,subject,doc,onOpen}){
     <div class="mprev">${html}</div>
     <details class="mdet"><summary>Ver / editar como texto simples (é o que vai pelo “Abrir no e-mail”)</summary><textarea id="mbody" class="mailbody">${esc(body)}</textarea></details>
     ${MAIL_ANX.length?`<div class="note">📎 Os links dos anexos já vão no e-mail. Se preferir anexar o arquivo: ${MAIL_ANX.map(a=>`<a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(' · ')}</div>`:''}
-    <div class="hint" style="margin:12px 0 0"><b>Dica:</b> “Copiar e-mail formatado” e colar no Outlook/Gmail mantém as tabelas e negritos. “Abrir no e-mail” abre um rascunho em texto simples.</div>
+    <div class="hint" style="margin:12px 0 0">${outlookOn()?`<b>Enviar pelo Outlook</b> manda direto da sua conta${msAccount()?` (${esc(msAccount().username)})`:''}, já formatado${MAIL_ANX.some(a=>a.db)?' e com os PDFs anexados (até 3 MB no total)':''}. Fica salvo nos seus Itens Enviados.`:`<b>Dica:</b> “Copiar e-mail formatado” e colar no Outlook mantém as tabelas e negritos. Para enviar direto, configure o Outlook em Configurações.`}</div>
    </form>
-   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button><button type="button" class="btn" data-mailopen2>✉ Abrir no e-mail</button><button type="button" class="btn pri" data-mailrich>Copiar e-mail formatado</button></div></div>`;
+   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button>${outlookOn()?`<button type="button" class="btn" data-mailrich>Copiar formatado</button><button type="button" class="btn pri" data-mailsend>✉ Enviar pelo Outlook</button>`:`<button type="button" class="btn" data-mailopen2>✉ Abrir no e-mail</button><button type="button" class="btn pri" data-mailrich>Copiar e-mail formatado</button>`}</div></div>`;
   m.classList.remove('hidden');document.body.classList.add('noscroll');
 }
 async function copyRich(){
@@ -1378,12 +1426,17 @@ function openCfg(){
   openModal({title:'Configurações',sub:'O e-mail vale para as duas arquitetas',
     body:`<div class="grid"><label class="fld w2"><span>E-mail do setor de compras</span><input name="emailCompras" type="email" value="${esc(CFG.emailCompras||EMAIL_PADRAO)}"${canWrite?'':' disabled'}><small>Para mais de um, separe por vírgula</small></label>
       <div class="fld w2"><span>Conectada como</span><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(meNome())}</b><button type="button" class="btn sm" data-logout>Sair</button></div></div>
+      <div class="sec w2" style="margin-top:8px">Envio automático pelo Outlook (Microsoft 365)</div>
+      <label class="fld"><span>ID do aplicativo (cliente)</span><input name="msClientId" value="${esc(CFG.msClientId||'')}" placeholder="xxxxxxxx-xxxx-…"${canWrite?'':' disabled'}></label>
+      <label class="fld"><span>ID do diretório (locatário)</span><input name="msTenant" value="${esc(CFG.msTenant||'')}" placeholder="xxxxxxxx-xxxx-…"${canWrite?'':' disabled'}></label>
+      <div class="fld w2"><small>${CFG.msClientId?(msAccount()?`Conectado como <b>${esc(msAccount().username)}</b> · <button type="button" class="lnk" data-msout style="text-decoration:underline">desconectar</button>`:'Configurado. Na primeira vez que enviar, o Outlook vai pedir login.'):'Preencha com os dados do registro do app no portal da Microsoft (Entra ID).'}</small></div>
       <label class="fld w2"><span>Trocar minha senha</span><input name="novaSenha" type="password" autocomplete="new-password" placeholder="Deixe em branco para manter"></label></div>`,
     buttons:[{l:'Fechar',cls:'ghost',fn:closeModal},{l:'Salvar',cls:'pri',fn:async f=>{
       const ns=f.querySelector('[name=novaSenha]').value;
       if(ns){try{await FBU.updatePassword(ns);toast('Senha alterada')}catch(e){toast(authMsg(e));return}}
       const em=f.querySelector('[name=emailCompras]').value.trim();
-      if(canWrite&&em!==CFG.emailCompras)await saveCfg({emailCompras:em});
+      const mc=f.querySelector('[name=msClientId]').value.trim(),mt=f.querySelector('[name=msTenant]').value.trim();
+      if(canWrite&&(em!==CFG.emailCompras||mc!==(CFG.msClientId||'')||mt!==(CFG.msTenant||'')))await saveCfg({emailCompras:em,msClientId:mc,msTenant:mt});
       closeModal();toast('Configurações salvas')}}]});
 }
 
