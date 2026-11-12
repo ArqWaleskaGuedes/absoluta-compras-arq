@@ -422,6 +422,9 @@ input.cell[type=date]{font-size:13.5px}
 .psem{font-size:13px;color:var(--mut);margin:10px 2px 0}
 .pg.flash{box-shadow:0 0 0 3px #c9a24a}
 @media (max-width:860px){.pcol{min-width:200px}}
+.gctl,.sctl{display:inline-flex;gap:2px}
+.gctl .ib,.sctl .ib{width:28px;height:28px;font-size:14px}
+.sctl{opacity:.35;transition:.15s}.pi:hover .sctl{opacity:1}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -527,7 +530,7 @@ const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'codigo',l:'Código da ob
  {s:'Etapas da obra (calculam o cronograma)'},{k:'etAlvenaria',l:'Início da alvenaria',t:'date'},{k:'etAcabamentos',l:'Início dos acabamentos',t:'date'},{k:'etEntrega',l:'Entrega da obra',t:'date'}];
 const F_CRON=[
  {s:'Item'},
- {k:'item',l:'Item',req:1,w:2,ph:'Ex.: Porcelanato 90x90 hall social'},
+ {k:'item',l:'Subitem',req:1,ph:'Ex.: Maca de massagem'},{k:'grupo',l:'Item (grupo)',list:'dl-grupos',ph:'Ex.: Salão de festas, Iluminação…',hint:'Escolha um item existente ou digite um nome novo'},
  {k:'area',l:'Área',t:'select',o:['terreo','unidades','subsolos','fachada'],ol:{terreo:{l:'Térreo'},unidades:{l:'Unidades'},subsolos:{l:'Subsolos e escadas'},fachada:{l:'Fachada'}}},{k:'prio',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
  {k:'categoria',l:'Categoria',t:'select',o:CATS},{k:'tipo',l:'Como é comprado',t:'select',o:['geral','ambiente'],ol:{geral:{l:'Compra geral (de uma vez, por categoria)'},ambiente:{l:'Por ambiente'}}},
  {k:'local',l:'Ambiente / local',w:2,ph:'Ex.: Hall térreo'},
@@ -1012,14 +1015,68 @@ async function importPack(k){
 }
 const CAT_GERAL=new Set(['Revestimentos','Pisos (vinílico/laminado)','Louças e metais','Ralos e perfis','Marmoraria / pedras','Esquadrias','Fachada','Portas e ferragens','Vidros e espelhos','Iluminação','Pintura','Forro / gesso','Paisagismo','Comunicação visual']);
 const tipoOf=c=>c.tipo||(CAT_GERAL.has(c.categoria)?'geral':'ambiente');
-const grpOf=c=>tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?(c.categoria||'Sem categoria'):c.local;
-const grpTipo=c=>tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?'geral':'ambiente';
+const grpAuto=c=>tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?(c.categoria||'Sem categoria'):c.local;
+const grpOf=c=>(c.grupo&&String(c.grupo).trim())||grpAuto(c);
+const grpTipo=c=>c.grupo?tipoOf(c):(tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?'geral':'ambiente');
 let CLOSED=new Set();try{CLOSED=new Set(JSON.parse(localStorage.getItem('ca_closed2')||'[]'))}catch(e){}
 const saveClosed=()=>lsSet('ca_closed2',JSON.stringify([...CLOSED]));
 const isOpen=g=>!CLOSED.has(UI.obra+'::'+UI.area+'::'+g);
 function cronFiltered(){const id=UI.obra;return S.cronograma.filter(c=>c.obra===id&&areaOf(c)===UI.area&&matchQ(c,['item','local','categoria','obs'])&&(!UI.stage||stageOf(c)===UI.stage))}
-function grouped(arr){const G={};arr.forEach(c=>{const g=grpOf(c);(G[g]=G[g]||[]).push(c)});Object.values(G).forEach(l=>l.sort(cmpItems));
-  return Object.keys(G).sort((a,b)=>cmpItems(G[a][0],G[b][0])).map(g=>({g,items:G[g],tipo:grpTipo(G[g][0])}))}
+const cmpSub=(a,b)=>((a.ordem??1e9)-(b.ordem??1e9))||cmpItems(a,b);
+function ordemGrupos(){const o=obraById(UI.obra)||{};return ((o.ordemGrupos||{})[UI.area])||[]}
+function grouped(arr){const G={};arr.forEach(c=>{const g=grpOf(c);(G[g]=G[g]||[]).push(c)});Object.values(G).forEach(l=>l.sort(cmpSub));
+  const man=ordemGrupos(),ix=g=>{const i=man.indexOf(g);return i<0?1e9:i};
+  return Object.keys(G).sort((a,b)=>(ix(a)-ix(b))||cmpItems([...G[a]].sort(cmpItems)[0],[...G[b]].sort(cmpItems)[0])).map(g=>({g,items:G[g],tipo:grpTipo(G[g][0])}))}
+async function moveGrupo(g,dir){
+  const all=grouped(S.cronograma.filter(c=>c.obra===UI.obra&&areaOf(c)===UI.area)).map(x=>x.g);
+  const i=all.indexOf(g),j=i+dir;if(i<0||j<0||j>=all.length)return;
+  [all[i],all[j]]=[all[j],all[i]];
+  const o=obraById(UI.obra);await put('obras',Object.assign({},o,{ordemGrupos:Object.assign({},o.ordemGrupos||{},{[UI.area]:all})}));
+}
+async function moveSub(id,dir){
+  const c=byId('cronograma',id);if(!c)return;const g=grpOf(c);
+  const list=S.cronograma.filter(x=>x.obra===UI.obra&&areaOf(x)===UI.area&&grpOf(x)===g).sort(cmpSub);
+  const i=list.findIndex(x=>x.id===id),j=i+dir;if(j<0||j>=list.length)return;
+  [list[i],list[j]]=[list[j],list[i]];
+  for(let k=0;k<list.length;k++)if(list[k].ordem!==k)await put('cronograma',Object.assign({},list[k],{ordem:k}));
+}
+function openGrupo(g){
+  const items=S.cronograma.filter(c=>c.obra===UI.obra&&areaOf(c)===UI.area&&grpOf(c)===g);
+  const tipo=items[0]?grpTipo(items[0]):'geral';
+  const temSol=items.filter(c=>solOf(c.id)).length;
+  MODAL_CTX=null;
+  openModal({title:'Editar item: '+esc(g),sub:`${items.length} subite${items.length===1?'m':'ns'} · ${esc(AREAS.find(a=>a[0]===UI.area)[1])}`,
+    body:`<div class="grid">
+      <label class="fld w2"><span>Nome do item</span><input name="gnome" value="${esc(g)}"></label>
+      <label class="fld"><span>Área</span><select name="garea">${AREAS.map(([k,l])=>`<option value="${k}"${k===UI.area?' selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="fld"><span>Tipo de compra</span><select name="gtipo"><option value="geral"${tipo==='geral'?' selected':''}>Compra geral</option><option value="ambiente"${tipo==='ambiente'?' selected':''}>Ambiente</option></select></label>
+      <label class="fld"><span>Prioridade de todos os subitens</span><select name="gprio"><option value="">(manter como está)</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
+      <div class="fld"><span>Ordem na lista</span><div style="display:flex;gap:6px"><button type="button" class="btn sm" data-gmove="-1">↑ Subir</button><button type="button" class="btn sm" data-gmove="1">↓ Descer</button></div></div>
+    </div><div class="hint" style="margin-top:14px">Subitens: ${items.map(c=>esc(c.item)).join(' · ')}</div>`,
+    buttons:[
+      {l:`Excluir item e ${items.length} subite${items.length===1?'m':'ns'}`,cls:'ghost danger',confirm:temSol?`Tem ${temSol} com solicitação — excluir mesmo?`:'Confirmar exclusão',fn:async()=>{for(const c of items)await del('cronograma',c.id);closeModal();toast(`Item “${g}” excluído`)}},
+      {l:'Fechar',cls:'ghost',fn:closeModal},
+      {l:'Salvar',cls:'pri',fn:async f=>{
+        const nome=f.querySelector('[name=gnome]').value.trim(),area=f.querySelector('[name=garea]').value,tp=f.querySelector('[name=gtipo]').value,pr=f.querySelector('[name=gprio]').value;
+        if(!nome){toast('Dê um nome ao item.');return}
+        for(const c of items){const n=Object.assign({},c,{grupo:nome,area,tipo:tp});if(pr)n.prio=pr;await put('cronograma',n)}
+        const o=obraById(UI.obra),og=Object.assign({},o.ordemGrupos||{});
+        if(og[UI.area]){og[UI.area]=og[UI.area].map(x=>x===g?nome:x);await put('obras',Object.assign({},o,{ordemGrupos:og}))}
+        closeModal();toast('Item atualizado');if(area!==UI.area){UI.area=area;saveUI();render()}}}]});
+  $('#modal').querySelectorAll('[data-gmove]').forEach(b=>b.onclick=async()=>{await moveGrupo(g,+b.dataset.gmove);toast(+b.dataset.gmove<0?'Item subiu na ordem':'Item desceu na ordem')});
+}
+function openNovoGrupo(){
+  MODAL_CTX=null;
+  openModal({title:'Novo item',sub:esc(AREAS.find(a=>a[0]===UI.area)[1]),
+    body:`<div class="grid"><label class="fld w2"><span>Nome do item</span><input name="gnome" placeholder="Ex.: Sala de cinema, Iluminação de fachada…"></label>
+      <label class="fld"><span>Tipo de compra</span><select name="gtipo"><option value="ambiente">Ambiente</option><option value="geral">Compra geral</option></select></label>
+      <label class="fld"><span>Primeiro subitem</span><input name="gsub" placeholder="Ex.: Poltronas"></label></div>`,
+    buttons:[{l:'Fechar',cls:'ghost',fn:closeModal},{l:'Criar item',cls:'pri',fn:async f=>{
+      const nome=f.querySelector('[name=gnome]').value.trim(),tp=f.querySelector('[name=gtipo]').value,sub=f.querySelector('[name=gsub]').value.trim();
+      if(!nome||!sub){toast('Preencha o nome do item e o primeiro subitem.');return}
+      await put('cronograma',{id:uid(),obra:UI.obra,area:UI.area,grupo:nome,tipo:tp,local:tp==='ambiente'?nome:'',item:sub,prio:'Normal',un:'un',criadoEm:nowISO()});
+      closeModal();toast(`Item “${nome}” criado`)}}]});
+}
 function grpInfo(items){const n=items.length,done=items.filter(c=>['pedido','entregue'].includes(stageOf(c))).length,late=items.filter(c=>cronStatus(c).k==='late').length;
   const lims=items.map(limite).filter(Boolean).sort();return {n,done,late,first:lims[0]||null}}
 const dTxt=c=>{const d=dataEf(c);return d?(estimado(c)?'≈ ':'')+fmtD(d):'—'};
@@ -1068,13 +1125,15 @@ function cronPrio(){
       <div class="pgt"><b>${esc(g)}</b><small>${tipo==='geral'?'Compra geral':'Ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
       <div class="pgd">${inf.first?`<small>pedir a partir de</small><b>${fmtD(inf.first)}</b>`:'<small>sem data</small>'}</div>
       <div class="pgb"><i style="width:${Math.round(inf.done/inf.n*100)}%"></i></div>
-      ${canWrite?`<button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
+      ${canWrite?`<span class="gctl"><button class="ib" data-gup="${esc(g)}" title="Subir">↑</button><button class="ib" data-gdown="${esc(g)}" title="Descer">↓</button><button class="ib" data-gedit="${esc(g)}" title="Editar item">✎</button></span><button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
       ${op?`<div class="pgl">${items.map((c,i)=>{const sol=solOf(c.id);return `<div class="pi" data-cron="${esc(c.id)}"><span class="rk2">${gi+1}.${i+1}</span>
         <div class="main"><div class="t">${esc(c.item)}${c.prio&&c.prio!=='Normal'?` <span class="pill p-${PRIO[c.prio]}" style="font-size:11px;padding:1px 8px">${c.prio}</span>`:''}${/^Sugestão/.test(c.obs||'')?' <span class="sug">sugestão</span>':''}</div>
         <div class="m">${esc(join([tipo==='geral'?c.local:c.categoria,qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div>
         <div class="pdt"><small>pedir até</small><b class="${cronStatus(c).k}">${lTxt(c)}</b></div><div class="pdt"><small>em obra</small><b>${dTxt(c)}</b></div>
         <div class="pst">${stPill(c)}</div>
-        <div class="pac">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div></div>`}).join('')}</div>`:''}</div>`}).join('')}</div>`;
+        <div class="pac">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div>
+        ${canWrite?`<span class="sctl"><button class="ib" data-sup="${esc(c.id)}" title="Subir">↑</button><button class="ib" data-sdown="${esc(c.id)}" title="Descer">↓</button></span>`:''}</div>`}).join('')}</div>`:''}</div>`}).join('')}</div>
+    ${canWrite?'<button class="btn" style="margin-top:12px" data-novogrupo>+ Novo item</button>':''}`;
 }
 function cronTimeline(){
   const arr=cronFiltered();if(!arr.length)return emptyArea();
@@ -1116,7 +1175,7 @@ function cronTimeline(){
 function cronTable(){
   const ro=canWrite?'':' disabled';
   const arr=cronFiltered();
-  const NC=13;let rows='';
+  const NC=14;let rows='';
   grouped(arr).forEach(({g,items,tipo},gi)=>{
     const inf=grpInfo(items),op=isOpen(g);
     rows+=`<tr class="mrow" data-tog="${esc(g)}"><td colspan="${NC}"><span class="chev">${op?'▾':'▸'}</span><span class="rk sm">${gi+1}</span>${esc(g)}<span class="gi">${tipo==='geral'?'compra geral':'ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</span>${canWrite?`<button class="lnk addamb" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}</td></tr>`;
@@ -1125,6 +1184,7 @@ function cronTable(){
       const st=cronStatus(c),sol=solOf(c.id);
       rows+=`<tr data-row="${esc(c.id)}">
       <td><input class="cell it" data-f="item" value="${esc(c.item)}"${ro}></td>
+      <td style="min-width:170px"><input class="cell" data-f="grupo" list="dl-grupos2" value="${esc(grpOf(c))}"${ro}></td>
       <td style="min-width:160px"><select class="cell" data-f="area"${ro}>${AREAS.map(([k,l])=>`<option value="${k}"${areaOf(c)===k?' selected':''}>${l}</option>`).join('')}</select></td>
       <td style="min-width:180px"><select class="cell" data-f="categoria"${ro}>${optList(CATS,c.categoria)}</select></td>
       <td style="width:122px"><select class="cell" data-f="tipo"${ro}><option value="geral"${tipoOf(c)==='geral'?' selected':''}>Geral</option><option value="ambiente"${tipoOf(c)==='ambiente'?' selected':''}>Por ambiente</option></select></td>
@@ -1142,7 +1202,7 @@ function cronTable(){
   });
   if(!arr.length&&(UI.q||UI.stage))rows=`<tr><td colspan="${NC}" class="calc mut" style="height:60px;text-align:center">Nada encontrado com esses filtros.</td></tr>`;
   if(canWrite)rows+=`<tr class="addrow"><td colspan="${NC}"><input id="addcron" placeholder="+ Adicionar item nesta área — digite e Enter, ou cole linhas do Excel" autocomplete="off"></td></tr>`;
-  return `<div class="tw"><table class="st" style="min-width:1420px"><thead><tr><th>Subitem</th><th>Área</th><th>Categoria</th><th>Compra</th><th>Ambiente</th><th>Qtd</th><th>Un</th><th>Em obra</th><th>Prazo (d)</th><th>Pedir até</th><th>Prioridade</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<datalist id="dl-grupos2">${[...new Set(S.cronograma.filter(x=>x.obra===UI.obra).map(grpOf))].sort().map(g=>`<option value="${esc(g)}">`).join('')}</datalist><div class="tw"><table class="st" style="min-width:1590px"><thead><tr><th>Subitem</th><th>Item (grupo)</th><th>Área</th><th>Categoria</th><th>Compra</th><th>Ambiente</th><th>Qtd</th><th>Un</th><th>Em obra</th><th>Prazo (d)</th><th>Pedir até</th><th>Prioridade</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 async function cellChange(el){
   const tr=el.closest('tr[data-row]');if(!tr)return;
@@ -1244,7 +1304,7 @@ function fieldHTML(f,o){
   else if(f.t==='area') inp=`<textarea name="${f.k}" rows="3" placeholder="${esc(f.ph||'')}"${ro}>${esc(v)}</textarea>`;
   else if(f.t==='money') inp=`<input name="${f.k}" inputmode="decimal" value="${v===''?'':esc(money(v,false))}" placeholder="0,00"${ro}>`;
   else if(f.t==='number') inp=`<input name="${f.k}" inputmode="decimal" value="${esc(numTxt(v))}" placeholder="${esc(f.ph||'')}"${ro}>`;
-  else inp=`<input name="${f.k}" type="${f.t||'text'}" value="${esc(v)}" placeholder="${esc(f.ph||'')}"${ro}>`;
+  else inp=`<input name="${f.k}" type="${f.t||'text'}" value="${esc(v)}" placeholder="${esc(f.ph||'')}"${f.list?` list="${f.list}" autocomplete="off"`:''}${ro}>`;
   return `<label class="fld${f.w===2?' w2':''}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}${f.hint?`<small>${esc(f.hint)}</small>`:''}</label>`;
 }
 const formHTML=(spec,o)=>`<div class="grid">${spec.map(f=>fieldHTML(f,o)).join('')}</div>`;
@@ -1555,9 +1615,9 @@ function openCron(c,pre){
   const L=limite(c);
   MODAL_CTX=null;
   openModal({
-    title:isNew?'Novo item do cronograma':esc(c.item),
+    title:isNew?'Novo subitem':esc(c.item),
     sub:esc(join([obraNomeCod(c.obra),L?'Pedir até '+fmtDY(L):''])),
-    body:formHTML(F_CRON,c)+(sol?`<div class="note">Este item já tem a solicitação de cotação <b>${esc(sol.numero)}</b> (${SOL_ST[sol.status].l}). <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),
+    body:formHTML(F_CRON,Object.assign({},c,{grupo:c.grupo||(isNew&&!pre?'':grpOf(c))}))+`<datalist id="dl-grupos">${[...new Set(S.cronograma.filter(x=>x.obra===c.obra).map(grpOf))].sort().map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`+(sol?`<div class="note">Este item já tem a solicitação de cotação <b>${esc(sol.numero)}</b> (${SOL_ST[sol.status].l}). <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),
     buttons:b});
 }
 
@@ -1704,7 +1764,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1714,9 +1774,15 @@ document.addEventListener('click',e=>{
   if('editobra' in d)return openObra(obraById(UI.obra));
   if(d.obra){UI.obra=d.obra;UI.q='';UI.gq='';if($('#gq'))$('#gq').value='';saveUI();render();window.scrollTo(0,0);return}
   if(d.view){UI.view=d.view;UI.q='';saveUI();render();return}
+  if(d.gup!=null){e.stopPropagation();moveGrupo(d.gup,-1);return}
+  if(d.gdown!=null){e.stopPropagation();moveGrupo(d.gdown,1);return}
+  if(d.gedit!=null){e.stopPropagation();openGrupo(d.gedit);return}
+  if(d.sup!=null){e.stopPropagation();moveSub(d.sup,-1);return}
+  if(d.sdown!=null){e.stopPropagation();moveSub(d.sdown,1);return}
+  if('novogrupo' in d){openNovoGrupo();return}
   if(d.jump!=null){const g=d.jump;CLOSED.delete(UI.obra+'::'+UI.area+'::'+g);saveClosed();UI.stage='';UI.q='';if(UI.cview!=='prio'){UI.cview='prio';saveUI();render()}else renderItems();setTimeout(()=>{const el=document.getElementById('g-'+gid(g));if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}},60);return}
   if(d.area){UI.area=d.area;UI.q='';UI.stage='';saveUI();render();return}
-  if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,tp==='geral'?{categoria:g,tipo:'geral'}:{local:g,tipo:'ambiente'});return}
+  if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,Object.assign({grupo:g},tp==='geral'?{categoria:CATS.includes(g)?g:'',tipo:'geral'}:{local:g,tipo:'ambiente'}));return}
   if(d.tog!=null){const k=UI.obra+'::'+UI.area+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
   if(d.pack){t.disabled=true;importPack(d.pack);return}
   if('allcats' in d){UI.allcats=!UI.allcats;render();return}
