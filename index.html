@@ -318,6 +318,20 @@ input.cell[type=date]{font-size:13.5px}
 .tleg i{width:14px;height:10px;border-radius:3px}
 .lg-late{background:repeating-linear-gradient(135deg,#e9b9ad 0 3px,#f4d6ce 3px 6px);border:1px solid var(--red)}
 @media (max-width:860px){.tline{--lw:150px}.fn{min-width:108px}.fn b{font-size:22px}.farr{width:20px}}
+.kmoney .kpi b{font-size:26px;white-space:nowrap}
+.kmoney .kpi{padding:18px 20px}
+.vbx{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:0 0 14px;font-size:14px}
+.vbx.warn{border-color:#e7cf9f;background:#fbf3e3}
+.vbx.over{border-color:#e7b8ac;background:#fbeae5}
+.vbt{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.vbar{height:8px;background:#e9e2d4;border-radius:6px;overflow:hidden;display:flex}
+.vbar i{display:block;height:100%;background:#6b6a4c}
+.vbar i.nw{background:#c9a24a}
+.vbar i.pv{background:#c9b48f}
+.vbar.over i{background:var(--red)}
+.vbar.sm{height:6px;margin-bottom:3px}
+.vbs{margin-top:7px;font-size:13.5px;color:#5c5749}
+.vbx.over .vbs b{color:var(--red)}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -430,7 +444,7 @@ const F_CRON=[
  {k:'obs',l:'Observações',t:'area',w:2}];
 const F_SOL=[
  {s:'Produto'},
- {k:'item',l:'Produto / item',req:1,w:2,ph:'Ex.: Porcelanato hall social'},
+ {k:'item',l:'Produto / item',req:1,ph:'Ex.: Porcelanato hall social'},{k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},
  {k:'qtd',l:'1. Quantidade',t:'number',req:1},{k:'un',l:'Unidade',t:'select',o:UNS},
  {k:'modelo',l:'2. Modelo ou referência do produto',req:1,ph:'Ex.: Portobello Travertino Navona 90x90 ref. 12345'},{k:'marca',l:'Marca / fabricante'},
  {k:'acabamento',l:'3. Cor e características específicas',t:'area',w:2,req:1,ph:'Cor, acabamento (polido, acetinado, natural…), textura, voltagem, lado de abertura…'},
@@ -440,7 +454,7 @@ const F_SOL=[
  {k:'anexos_ui',t:'anexos'},
  {s:'6. Demais informações importantes'},
  {k:'especificacao',l:'O que garante que vamos cotar exatamente o produto certo',t:'area',w:2,ph:'Aplicação, normas, o que NÃO pode vir diferente, referência de lote, foto de amostra…'},
- {k:'categoria',l:'Categoria',t:'select',o:CATS},{k:'local',l:'Ambiente / aplicação'},
+ {k:'local',l:'Ambiente / aplicação',w:2},
  {s:'Indicação de fornecedor (muito bem-vinda)'},
  {k:'fornecedor',l:'Fornecedor indicado'},{k:'contato',l:'Contato (nome)'},
  {k:'telefone',l:'Telefone / WhatsApp',t:'tel'},{k:'email',l:'E-mail',t:'email'},
@@ -767,6 +781,7 @@ function renderObra(){
       <label class="chk"><input type="checkbox" id="cancel" ${UI.cancel?'checked':''}> Mostrar canceladas</label>
 </div>
       ${canWrite?'<div class="hint">Arraste o cartão para mudar de etapa (no celular, use a seta <b>→</b>). Soltar em <b>Requisitada</b> gera a requisição.</div>':''}`;
+  }else if(UI.view==='orcamento'){tb='';
   }else{
     const cnt=k=>k==='todas'?s.rq.length:s.rq.filter(x=>x.status===k).length;
     const ch=[['todas','Todas'],...Object.keys(REQ_ST).map(k=>[k,REQ_ST[k].l])];
@@ -775,12 +790,13 @@ function renderObra(){
   }
   $('#main').innerHTML=`
   <div class="ohero">${fotoDiv(o)}<div class="ov"><div><h1>${esc(o.nome)}</h1><div class="meta">${o.fase?`<span class="chipw">${esc(o.fase)}</span>`:''}${o.responsavel?`<span class="chipw">Resp.: ${esc(userNome(o.responsavel))}</span>`:''}${canWrite?'<button class="chipw" style="border:0;color:#fff;font:inherit;font-size:12.5px;cursor:pointer" data-editobra>Editar obra / foto</button>':''}</div></div>
-    <div class="stt"><div><small>No cronograma</small><b>${s.cr.length}</b></div><div><small>Solicitações abertas</small><b>${s.abertas}</b></div><div><small>Requisitado</small><b>${s.total?money(s.total):s.ativas.length}</b></div></div></div></div>
+    <div class="stt"><div><small>No cronograma</small><b>${s.cr.length}</b></div><div><small>Solicitações abertas</small><b>${s.abertas}</b></div><div><small>Requisitado</small><b>${s.total?money(s.total):s.ativas.length}</b></div>${(()=>{let L=0,U=0;CATS.forEach(c=>{const v=verbaOf(o.id,c);if(v.lim){L+=v.lim;U+=v.ped+v.prev}});return L?`<div><small>Saldo de verba</small><b style="${L-U<0?'color:#ffb4a4':''}">${money(L-U)}</b></div>`:''})()}</div></div></div>
   <div class="tabs">
     <button class="tab ${UI.view==='cronograma'?'on':''}" data-view="cronograma">Cronograma <span class="c ${s.late?'al':''}">${al?al+' p/ pedir':s.cr.length}</span></button>
     <button class="tab ${UI.view==='solicitacoes'?'on':''}" data-view="solicitacoes">Solicitações <span class="c">${s.abertas}</span></button>
     <button class="tab ${UI.view==='requisicoes'?'on':''}" data-view="requisicoes">Requisições <span class="c">${s.ativas.length}</span></button>
-    <span class="sp"></span>${canWrite&&UI.view!=='requisicoes'?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação'}</button>`:''}
+    <button class="tab ${UI.view==='orcamento'?'on':''}" data-view="orcamento">Orçamento ${(()=>{const n=CATS.filter(c=>{const v=verbaOf(o.id,c);return v.lim&&v.saldo<0}).length;return n?`<span class="c al">${n} estourada${n>1?'s':''}</span>`:''})()}</button>
+    <span class="sp"></span>${canWrite&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação'}</button>`:''}
   </div>
   ${tb}
   <div id="items"></div>`;
@@ -790,11 +806,51 @@ function renderItems(){
   const box=$('#items');if(!box)return;
   if(UI.view==='cronograma')box.innerHTML=UI.cview==='timeline'?cronTimeline():cronTable();
   else if(UI.view==='solicitacoes')box.innerHTML=solBoard();
+  else if(UI.view==='orcamento')box.innerHTML=orcamentoView();
   else box.innerHTML=reqTable();
 }
 
 /* ---------- planilha do cronograma ---------- */
 const optList=(arr,v)=>`<option value=""></option>`+arr.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(x)}</option>`).join('');
+const catKey=c=>String(c||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').toLowerCase();
+function verbaOf(obraId,cat,exceptSol){
+  const o=obraById(obraId)||{};const lim=Number((o.verbas||{})[catKey(cat)])||0;
+  const ped=S.requisicoes.filter(r=>r.obra===obraId&&(r.categoria||'')===cat).reduce((a,r)=>a+(Number(r.valorTotal)||0),0);
+  const prev=S.solicitacoes.filter(x=>x.obra===obraId&&(x.categoria||'')===cat&&['cotada','aprovada'].includes(x.status)&&x.id!==exceptSol).reduce((a,x)=>a+(Number(x.cotValor)||0),0);
+  return {lim,ped,prev,saldo:lim-ped-prev};
+}
+function verbaBox(obraId,cat,valor,exceptSol){
+  if(!cat)return '<div class="vbx mut">Escolha a categoria para ver a verba disponível.</div>';
+  const v=verbaOf(obraId,cat,exceptSol);const val=Number(valor)||0;
+  if(!v.lim)return `<div class="vbx">Verba de <b>${esc(cat)}</b>: <span class="mut">não definida</span> · <button type="button" class="lnk" data-goverba style="text-decoration:underline">definir na aba Orçamento</button></div>`;
+  const after=v.saldo-val,pct=Math.min(100,Math.round((v.ped+v.prev+val)/v.lim*100));
+  return `<div class="vbx ${after<0?'over':pct>=85?'warn':''}"><div class="vbt"><span>Verba de <b>${esc(cat)}</b></span><span>${money(v.ped+v.prev)} usados de ${money(v.lim)}</span></div>
+    <div class="vbar"><i style="width:${Math.min(100,Math.round((v.ped+v.prev)/v.lim*100))}%"></i><i class="nw" style="width:${Math.max(0,pct-Math.min(100,Math.round((v.ped+v.prev)/v.lim*100)))}%"></i></div>
+    <div class="vbs">${val?`Esta compra: <b>${money(val)}</b> · `:''}${after<0?`<b>Estoura a verba em ${money(-after)}</b>`:`Saldo ${val?'depois desta compra':'disponível'}: <b>${money(after)}</b>`}</div></div>`;
+}
+function orcamentoView(){
+  const o=obraById(UI.obra),id=o.id,ro=canWrite?'':' disabled';
+  const usadas=new Set([...S.requisicoes,...S.solicitacoes,...S.cronograma].filter(x=>x.obra===id).map(x=>x.categoria).filter(Boolean));
+  const cats=CATS.filter(c=>(o.verbas||{})[catKey(c)]||usadas.has(c)||UI.allcats);
+  let T={lim:0,ped:0,prev:0};
+  const rows=cats.map(c=>{const v=verbaOf(id,c);T.lim+=v.lim;T.ped+=v.ped;T.prev+=v.prev;
+    const p1=v.lim?Math.min(100,v.ped/v.lim*100):0,p2=v.lim?Math.min(100-p1,v.prev/v.lim*100):0,over=v.lim&&v.saldo<0;
+    return `<tr><td class="calc" style="font-weight:500">${esc(c)}</td>
+      <td style="width:170px"><input class="cell n" data-verba="${esc(catKey(c))}" inputmode="decimal" value="${v.lim?esc(money(v.lim,false)):''}" placeholder="definir…"${ro}></td>
+      <td class="calc" style="text-align:right">${v.ped?money(v.ped):'—'}</td><td class="calc" style="text-align:right">${v.prev?money(v.prev):'—'}</td>
+      <td class="calc" style="text-align:right;font-weight:500;color:${over?'var(--red)':'inherit'}">${v.lim?money(v.saldo):'—'}</td>
+      <td class="calc" style="width:220px">${v.lim?`<div class="vbar sm ${over?'over':''}"><i style="width:${p1}%"></i><i class="pv" style="width:${p2}%"></i></div><small class="mut">${Math.round((v.ped+v.prev)/v.lim*100)}% usado${over?' · <b style="color:var(--red)">estourou</b>':''}</small>`:'<small class="mut">sem verba definida</small>'}</td></tr>`}).join('');
+  const sT=T.lim-T.ped-T.prev;
+  return `<div class="kpis kmoney" style="margin-bottom:16px">
+    <div class="kpi"><div><small>Verba total</small><b>${money(T.lim)||'R$ 0,00'}</b></div></div>
+    <div class="kpi"><div><small>Pedidos feitos</small><b>${money(T.ped)||'R$ 0,00'}</b></div></div>
+    <div class="kpi"><div><small>Em aprovação</small><b>${money(T.prev)||'R$ 0,00'}</b></div></div>
+    <div class="kpi ${sT<0?'al':''}"><div><small>Saldo</small><b>${money(sT)||'R$ 0,00'}</b></div></div></div>
+  <div class="hint">Digite a <b>verba máxima</b> de cada categoria direto na tabela. <b>Pedidos feitos</b> soma as requisições; <b>Em aprovação</b> soma as solicitações cotadas ou aprovadas que ainda não viraram pedido.</div>
+  <div class="tw" style="max-height:none"><table class="st" style="min-width:860px"><thead><tr><th>Categoria</th><th style="text-align:right">Verba máxima (R$)</th><th style="text-align:right">Pedidos feitos</th><th style="text-align:right">Em aprovação</th><th style="text-align:right">Saldo</th><th>Uso</th></tr></thead>
+  <tbody>${rows||'<tr><td colspan="6" class="calc mut" style="height:60px;text-align:center">Nenhuma categoria ainda.</td></tr>'}</tbody></table></div>
+  <button class="lnk" style="margin-top:12px;text-decoration:underline" data-allcats>${UI.allcats?'Mostrar só as categorias em uso':'Mostrar todas as categorias'}</button>`;
+}
 const STAGES=[['pedir','A pedir','#e2d8c6'],['solicitado','Solicitado','#c9b48f'],['cotacao','Em cotação','#97a07a'],['aprovado','Aprovado','#6f7a52'],['pedido','Pedido feito','#a98b66'],['entregue','Entregue','#4f5638']];
 const STC=Object.fromEntries(STAGES.map(([k,,c])=>[k,c]));
 function stageOf(c){const s=solOf(c.id);if(!s)return 'pedir';const r=reqOf(s.id);if(r)return r.status==='entregue'?'entregue':'pedido';return {nova:'solicitado',contato:'cotacao',cotada:'cotacao',aprovada:'aprovado',requisitada:'pedido'}[s.status]||'solicitado'}
@@ -924,7 +980,7 @@ function solCard(s){
     <div class="num">${esc(s.numero||'')}${s.prioridade&&s.prioridade!=='Normal'?`<span class="pill p-${PRIO[s.prioridade]}">${esc(s.prioridade)}</span>`:''}</div>
     <div class="t">${esc(s.item)}</div>
     <div class="m">${esc(join([qtdTxt(s),s.modelo]))}</div>
-    ${SOL_OPEN.includes(s.status)&&faltando(s).length?`<div class="inc">Falta: ${esc(faltando(s).join(', '))}</div>`:''}${(s.anexos||[]).length?`<div class="m">📎 ${s.anexos.length} anexo${s.anexos.length>1?'s':''}</div>`:''}
+    ${SOL_OPEN.includes(s.status)&&faltando(s).length?`<div class="inc">Falta: ${esc(faltando(s).join(', '))}</div>`:''}${s.cotValor&&s.categoria&&SOL_OPEN.includes(s.status)&&(()=>{const v=verbaOf(s.obra,s.categoria,s.id);return v.lim&&v.saldo-s.cotValor<0})()?`<div class="inc">⚠ Estoura a verba de ${esc(s.categoria)}</div>`:''}${(s.anexos||[]).length?`<div class="m">📎 ${s.anexos.length} anexo${s.anexos.length>1?'s':''}</div>`:''}
     <div class="m">${s.fornecedor?esc(s.fornecedor):'<i>Sem fornecedor indicado</i>'}</div>
     <div class="kf"><span class="${s.dataNecessaria&&daysTo(s.dataNecessaria)<7&&SOL_OPEN.includes(s.status)?'calc soon':'m'}" style="padding:0!important;margin:0">${s.dataNecessaria?'Em obra '+fmtD(s.dataNecessaria):''}</span>
       <span class="bt">${s.cotValor?`<span class="v">${money(s.cotValor)}</span>`:''}<button class="ib" data-mailsol="${esc(s.id)}" title="Enviar por e-mail">✉</button>${nx&&canWrite?`<button class="ib y" data-adv="${esc(s.id)}" title="Avançar para ${SOL_ST[nx].l}">→</button>`:''}</span></div>
@@ -941,6 +997,7 @@ async function moveSol(id,to){
   if(to!=='nova'&&to!=='cancelada'&&faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes: '+faltando(s).join(', '));return}
   if(to==='cotada'&&!s.cotValor){openSol(s,null,'cotada');toast('Informe o valor cotado para marcar como cotada.');return}
   if(to==='aprovada'&&!s.cotValor){openSol(s,null,'aprovada');toast('Informe o valor cotado antes de aprovar.');return}
+  if(to==='aprovada'&&s.categoria){const v=verbaOf(s.obra,s.categoria,s.id);if(v.lim&&v.saldo-s.cotValor<0){openSol(s);toast(`Essa compra estoura a verba de ${s.categoria} — confira antes de aprovar.`);return}}
   try{await patch('solicitacoes',id,{status:to,hist:(s.hist||[]).concat([{st:to,em:nowISO()}])});toast(`${s.numero}: ${SOL_ST[to].l}`)}catch(e){}
 }
 
@@ -1009,6 +1066,7 @@ $('#modal').addEventListener('click',async e=>{
   const os=e.target.closest('[data-opensol]');
   if(os){e.preventDefault();const s=byId('solicitacoes',os.dataset.opensol);closeModal();if(s){UI.view='solicitacoes';saveUI();render();openSol(s)}return}
   if(e.target.closest('[data-logout]')){closeModal();firebase.auth().signOut();return}
+  if(e.target.closest('[data-goverba]')){closeModal();UI.view='orcamento';saveUI();render();return}
   const cm=e.target.closest('[data-copymsg]');
   if(cm){if(MODAL_CTX)copyText(MODAL_CTX.msg(readForm(MODAL_CTX.spec,$('#mform'))));return}
   const mo=e.target.closest('[data-mailopen]');
@@ -1066,7 +1124,7 @@ function mailSol(s){
     body:`Olá, equipe de compras!\n\nSegue solicitação de compra de arquitetura — obra ${nome}:\n\n${solMailBlock(s)}\n\nSolicitante: ${s.solicitante||meNome()}\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
     onOpen:()=>{if(canWrite)patch('solicitacoes',s.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
-let MAIL_ANX=[];
+let MAIL_ANX=[],VB_OK=null;
 function mailBatch(){
   const arr=S.solicitacoes.filter(s=>s.obra===UI.obra&&s.status==='nova');
   const ok=arr.filter(s=>!faltando(s).length),inc=arr.length-ok.length;
@@ -1178,6 +1236,7 @@ function openSol(s,cron,target){
     if(newSt&&newSt!=='cancelada'&&newSt!=='nova')strict=true;
     const miss=strict?missing(F_SOL,o):(o.item?[]:['Produto / item']);if(miss.length){toast('Falta preencher: '+miss.join(', '));markMissing(f);return null}
     if((newSt==='cotada'||newSt==='aprovada')&&!o.cotValor){toast('Informe o valor cotado.');return null}
+    if((newSt==='aprovada'||strict==='REQ')&&o.cotValor&&o.categoria){const v=verbaOf(o.obra,o.categoria,o.id);if(v.lim&&v.saldo-o.cotValor<0&&VB_OK!==o.id){VB_OK=o.id;toast(`Atenção: estoura a verba de ${o.categoria} em ${money(o.cotValor-v.saldo)}. Clique de novo para aprovar mesmo assim.`);return null}}
     if(!o.numero)o.numero=nextNum('solicitacoes','SOL',o.obra);
     if(newSt&&newSt!==o.status){o.status=newSt;o.hist=(o.hist||[]).concat([{st:newSt,em:nowISO()}])}
     else if(isNew&&!(o.hist||[]).length)o.hist=[{st:'nova',em:nowISO()}];
@@ -1192,7 +1251,7 @@ function openSol(s,cron,target){
     if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
     if(isNew||st==='nova')b.push({l:'Salvar e enviar p/ compras ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
     if(!isNew&&st!=='nova'&&NX[st]){const [l,ns]=NX[st];b.push({l,cls:'pri',fn:async f=>{
-      if(ns==='REQ'){const o=await save(f,null,true);if(o)await gerarReq(o);return}
+      if(ns==='REQ'){const o=await save(f,null,'REQ');if(o)await gerarReq(o);return}
       const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
   }
   if(!isNew&&st==='requisitada'){const r=reqOf(s.id);if(r)b.push({l:'Ver requisição →',cls:'dark',fn:()=>{closeModal();UI.view='requisicoes';saveUI();render();openReq(r)}})}
@@ -1205,9 +1264,9 @@ function openSol(s,cron,target){
   openModal({
     title:isNew?'Nova solicitação':esc(join([s.numero,s.item],' — ')),
     sub:esc(join([obraNome(s.obra),cron?'a partir do cronograma':''])),
-    body:flow+tools+`<div class="ckl" id="ckl"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
+    body:flow+tools+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
   MODAL_CTX={spec:F_SOL,msg:v=>quoteMsg(Object.assign({},s,v,{anexos:MODAL_CTX.anexos})),anexos:(s.anexos||[]).slice()};
-  const upd=()=>{const v=Object.assign({},s,readForm(F_SOL,$('#mform')),{anexos:MODAL_CTX.anexos});$('#ckl').innerHTML=`<span class="ckt">Checklist da cotação</span>`+checkOf(v).map(c=>`<span class="ck ${c.ok?'ok':c.opc?'opc':'no'}">${c.ok?'✓':c.opc?'○':'!'} ${c.l}</span>`).join('')};
+  const upd=()=>{const v=Object.assign({},s,readForm(F_SOL,$('#mform')),{anexos:MODAL_CTX.anexos});const vb=$('#vbw');if(vb)vb.innerHTML=verbaBox(s.obra,v.categoria,v.cotValor,s.id);$('#ckl').innerHTML=`<span class="ckt">Checklist da cotação</span>`+checkOf(v).map(c=>`<span class="ck ${c.ok?'ok':c.opc?'opc':'no'}">${c.ok?'✓':c.opc?'○':'!'} ${c.l}</span>`).join('')};
   const drawAnx=()=>{$('#anx').innerHTML=MODAL_CTX.anexos.map((a,i)=>`<div class="ax"><a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">📄 ${esc(a.nome||'arquivo')}</a>${canWrite?`<button type="button" class="ib" data-rmanx="${i}" title="Remover">×</button>`:''}</div>`).join('');upd()};
   drawAnx();
   $('#mform').addEventListener('input',upd);$('#mform').addEventListener('change',upd);
@@ -1280,7 +1339,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1290,6 +1349,7 @@ document.addEventListener('click',e=>{
   if('editobra' in d)return openObra(obraById(UI.obra));
   if(d.obra){UI.obra=d.obra;UI.q='';UI.gq='';if($('#gq'))$('#gq').value='';saveUI();render();window.scrollTo(0,0);return}
   if(d.view){UI.view=d.view;UI.q='';saveUI();render();return}
+  if('allcats' in d){UI.allcats=!UI.allcats;render();return}
   if(d.stage){UI.stage=UI.stage===d.stage?'':d.stage;render();return}
   if(d.cview){UI.cview=d.cview;saveUI();render();return}
   if(d.chip){const[k,v]=d.chip.split(':');UI[k]=v;saveUI();render();return}
@@ -1312,6 +1372,7 @@ document.addEventListener('change',e=>{
   if(t.id==='cat'){UI.cat=t.value;renderItems()}
   else if(t.id==='pend'){UI.pend=t.checked;renderItems()}
   else if(t.id==='cancel'){UI.cancel=t.checked;saveUI();renderItems()}
+  else if(t.dataset&&t.dataset.verba!=null){const o=obraById(UI.obra);if(o){const v=t.value.trim()===''?null:parseMoney(t.value);const vb=Object.assign({},o.verbas||{});if(v==null)delete vb[t.dataset.verba];else vb[t.dataset.verba]=v;put('obras',Object.assign({},o,{verbas:vb})).then(()=>render())}}
   else if(t.classList.contains('cell')&&t.closest('#items'))cellChange(t);
 });
 document.addEventListener('keydown',e=>{
