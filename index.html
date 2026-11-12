@@ -170,6 +170,7 @@ h2{font-size:19px;font-weight:500;margin:0}
 .lrow .main{flex:1;min-width:0}
 .lrow .side2{text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .lrow .side2 small{font-size:12px;color:var(--mut)}
+.lrow .side2 small.r{color:var(--red);font-weight:500}
 .dt{flex:none;width:64px;text-align:center;border-radius:10px;padding:7px 4px;background:var(--gry2)}
 .dt small{display:block;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
 .dt b{font-size:17px;font-weight:500}
@@ -263,7 +264,7 @@ input.cell[type=date]{font-size:13.5px}
 .ax{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fffdf9;border:1px solid var(--line);border-radius:9px;padding:4px 4px 4px 12px;font-size:14px}
 .ax a{text-decoration:none;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inc{font-size:12px;color:var(--red);margin-top:6px}
-.lform{max-width:440px;margin:26px auto 0}
+.lform{max-width:520px;margin:26px auto 0}
 .lcard.sel{padding:20px 14px}
 .lcard.sel.on{border-color:var(--ol);box-shadow:0 0 0 2px var(--ol)}
 .lerr{color:var(--red);font-size:14px;margin-top:10px;min-height:18px}
@@ -441,7 +442,7 @@ input.cell[type=date]{font-size:13.5px}
 .loading{padding:80px 0;text-align:center;color:var(--mut)}
 /* login */
 .login{max-width:600px;margin:70px auto;text-align:center}
-.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-top:30px}
 .lcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 16px;cursor:pointer;color:var(--ink);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:10px;transition:.15s;box-shadow:var(--sh)}
 .lcard:hover{border-color:var(--sage);transform:translateY(-2px)}
 .lcard .av{width:66px;height:66px;font-size:26px}
@@ -525,7 +526,10 @@ const normReq=r=>REQ_ST[r.status]?r:Object.assign({},r,{status:'ativa'});
 const PRIO={Normal:'gry',Alta:'amb',Urgente:'red'};
 const FASES=['Próxima','Fundação','Estrutura','Acabamentos','Finalização','Concluída'];
 const COLS=['obras','cronograma','solicitacoes','requisicoes'];
-const USERS=[{id:'waleska',nome:'Waleska'},{id:'barbara',nome:'Barbara'}];
+const USERS=[{id:'waleska',nome:'Waleska',papel:'arq'},{id:'barbara',nome:'Barbara',papel:'arq'},{id:'thaisa',nome:'Thaisa',papel:'compras'}];
+const isCompras=()=>(USERS.find(u=>u.id===ME)||{}).papel==='compras';
+let ARQ=true,RO_ALLOW=null;
+const papelNome=id=>(USERS.find(u=>u.id===id)||{}).papel==='compras'?'Compras':'Arquitetura';
 const userNome=id=>(USERS.find(u=>u.id===id)||{}).nome||'';
 
 const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'codigo',l:'Código da obra',ph:'Ex.: RD04'},{k:'sigla',l:'Sigla curta',req:1,ph:'Ex.: VP'},{k:'fase',l:'Fase',t:'select',o:FASES},{k:'responsavel',l:'Arquiteta responsável',t:'select',o:USERS.map(u=>u.id),ol:Object.fromEntries(USERS.map(u=>[u.id,{l:u.nome}]))},
@@ -729,7 +733,7 @@ async function seedObras(){if(seeding)return;seeding=true;const snap=await ref('
 const AUTH_ERR={'auth/invalid-credential':'Usuária ou senha incorretas. Se é seu primeiro acesso, use “Criar minha senha”.','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Essa usuária ainda não tem senha — use “Criar minha senha”.','auth/email-already-in-use':'Essa usuária já tem senha. Use “Entrar”.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.','auth/operation-not-allowed':'O login por e-mail/senha está desativado no Firebase.','auth/network-request-failed':'Sem conexão com a internet.','auth/requires-recent-login':'Por segurança, saia e entre de novo antes de trocar a senha.'};
 const authMsg=e=>AUTH_ERR[e&&e.code]||('Não foi possível entrar ('+(e&&e.code||'erro')+')');
 async function doLogin(f){
-  const id=f.querySelector('[name=luser]').value,pw=f.querySelector('[name=lpass]').value;LUSER=id;
+  const id=(f.querySelector('[name=luser]:checked')||{}).value||LUSER,pw=f.querySelector('[name=lpass]').value;LUSER=id;
   const out=$('#lerr');out.textContent='';
   if(!id){out.textContent='Escolha quem está entrando.';return}
   if(!pw){out.textContent='Digite a senha.';return}
@@ -740,7 +744,7 @@ async function doLogin(f){
       if(pw!==pw2){out.textContent='As senhas não conferem.';btn.disabled=false;return}
       await firebase.auth().createUserWithEmailAndPassword(emailOf(id),pw);
     }else await firebase.auth().signInWithEmailAndPassword(emailOf(id),pw);
-    LMODE='entrar';wantOwn=true;UI.scope='minhas';saveUI();
+    LMODE='entrar';wantOwn=true;UI.scope='minhas';if(id==='thaisa'){UI.obra='geral';UI.view='solicitacoes';wantOwn=false}saveUI();
   }catch(e){out.textContent=authMsg(e);btn.disabled=false}
 }
 const clean=o=>JSON.parse(JSON.stringify(o,(k,v)=>v===undefined?null:v));
@@ -779,6 +783,7 @@ async function abrirArquivo(id){
 /* ---------- render ---------- */
 const editingCell=()=>{const a=document.activeElement;return !!(a&&a.classList&&a.classList.contains('cell'))};
 function render(){
+  ARQ=canWrite&&!isCompras();
   if(editingCell()){pendingRender=true;return}
   pendingRender=false;
   const addFocused=document.activeElement&&document.activeElement.id==='addcron';
@@ -788,9 +793,9 @@ function render(){
   renderUser();
   if(mode==='loading'){m.innerHTML='<div class="loading">Carregando…</div>';return}
   if(AUTH==='out'){const cr=LMODE==='criar';
-    m.innerHTML=`<div class="login"><h1>Arquitetura | Compras</h1><div class="mut" style="margin-top:8px">${cr?'Primeiro acesso: crie sua senha':'Acesso restrito às arquitetas da Absoluta'}</div>
+    m.innerHTML=`<div class="login"><h1>Arquitetura | Compras</h1><div class="mut" style="margin-top:8px">${cr?'Primeiro acesso: crie sua senha':'Acesso restrito à equipe da Absoluta'}</div>
     <form id="lform" class="lform" autocomplete="on">
-      <div class="lgrid">${USERS.map(u=>`<label class="lcard sel${LUSER===u.id?' on':''}"><input type="radio" name="luser" value="${u.id}" ${LUSER===u.id?'checked':''} hidden><span class="av">${esc(u.nome[0])}</span><b>${esc(u.nome)}</b></label>`).join('')}</div>
+      <div class="lgrid">${USERS.map(u=>`<label class="lcard sel${LUSER===u.id?' on':''}"><input type="radio" name="luser" value="${u.id}" ${LUSER===u.id?'checked':''} hidden><span class="av">${esc(u.nome[0])}</span><b>${esc(u.nome)}</b><small>${papelNome(u.id)}</small></label>`).join('')}</div>
       <input type="hidden" name="username" value="${esc(LUSER)}" autocomplete="username">
       <label class="fld" style="margin-top:20px;text-align:left"><span>${cr?'Crie uma senha (mín. 6 caracteres)':'Senha'}</span><input type="password" name="lpass" autocomplete="${cr?'new-password':'current-password'}"></label>
       ${cr?'<label class="fld" style="margin-top:12px;text-align:left"><span>Repita a senha</span><input type="password" name="lpass2" autocomplete="new-password"></label>':''}
@@ -808,25 +813,25 @@ function render(){
   }
   if(UI.obra!=='geral'&&!obraById(UI.obra))UI.obra='geral';
   const ht=$('#htitle');if(ht)ht.innerHTML=UI.obra!=='geral'&&!UI.gq&&obraById(UI.obra)?`Arquitetura <span>|</span> <span>${esc(obraById(UI.obra).nome)}</span>`:'Arquitetura <span>| Compras</span>';
-  if(UI.gq)renderSearch();else if(UI.obra==='geral')renderGeral();else renderObra();
+  if(UI.gq)renderSearch();else if(UI.obra==='geral')(isCompras()?renderCompras():renderGeral());else renderObra();
   if(scroll!=null&&$('.tw'))$('.tw').scrollTop=scroll;
   if(addFocused&&$('#addcron'))$('#addcron').focus();
 }
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender&&!editingCell())render()},0));
 
 function renderUser(){
-  const html=ME?`<span class="av">${esc(meNome()[0])}</span><span><b>${esc(meNome())}</b><small>Arquitetura</small></span>`:'';
+  const html=ME?`<span class="av">${esc(meNome()[0])}</span><span><b>${esc(meNome())}</b><small>${papelNome(ME)}</small></span>`:'';
   document.querySelectorAll('.me').forEach(u=>{u.innerHTML=u.classList.contains('mini')?(ME?`<span class="av sm">${esc(meNome()[0])}</span>`:''):html;u.style.visibility=ME?'visible':'hidden'});
 }
 function renderNav(){
   const n=$('#nav');
   if(mode==='loading'||!ME){n.innerHTML='';return}
   const ni=o=>{const s=obraStats(o.id),al=s.late+s.soon;return `<button class="ni ${UI.obra===o.id&&!UI.gq?'on':''}" data-obra="${esc(o.id)}">${ico('bld')}<span>${esc(o.nome)}</span>${al?`<span class="ct ${s.late?'al':''}">${al}</span>`:''}</button>`};
-  const mine=obrasSorted().filter(o=>o.responsavel===ME),other=obrasSorted().filter(o=>o.responsavel!==ME);
+  const mine=isCompras()?[]:obrasSorted().filter(o=>o.responsavel===ME),other=isCompras()?obrasSorted():obrasSorted().filter(o=>o.responsavel!==ME);
   n.innerHTML=`<button class="ni ${UI.obra==='geral'&&!UI.gq?'on':''}" data-obra="geral">${ico('home')}<span>Início</span></button>
     ${mine.length?`<div class="nl">Minhas obras</div>${mine.map(ni).join('')}`:''}
-    ${other.length?`<div class="nl">Outras obras</div>${other.map(ni).join('')}`:''}
-    ${canWrite?`<button class="ni add" data-newobra>${ico('plus')}<span>Nova obra</span></button>`:''}
+    ${other.length?`<div class="nl">${isCompras()?'Obras':'Outras obras'}</div>${other.map(ni).join('')}`:''}
+    ${ARQ?`<button class="ni add" data-newobra>${ico('plus')}<span>Nova obra</span></button>`:''}
     <button class="ni add" data-cfg>${ico('gear')}<span>Configurações</span></button>`;
 }
 function obraStats(id){
@@ -839,6 +844,27 @@ function cronBucket(c){
   const sol=solOf(c.id);if(!sol)return 'comprar';
   const r=reqOf(sol.id);if(r)return r.status==='entregue'?'entregue':'pedido';
   return 'cotacao';
+}
+function renderCompras(){
+  const so=S.solicitacoes,rq=S.requisicoes;
+  const pz=s=>s.dataNecessaria||'9999';
+  const cotar=so.filter(s=>['nova','contato'].includes(s.status)).sort((a,b)=>pz(a).localeCompare(pz(b)));
+  const aguard=so.filter(s=>s.status==='cotada').sort((a,b)=>pz(a).localeCompare(pz(b)));
+  const emitir=rq.filter(r=>r.status==='ativa'&&!r.pedidoNum);
+  const entregas=rq.filter(r=>r.status!=='entregue'&&r.previsaoEntrega&&daysTo(r.previsaoEntrega)<=15).sort((a,b)=>a.previsaoEntrega.localeCompare(b.previsaoEntrega));
+  const tag=id=>`<span class="tag">${esc(obraCod(id)||obraSig(id))}</span>`;
+  const rowS=s=>{const st=SOL_ST[s.status];return `<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}"><div class="main"><div class="num">${tag(s.obra)} ${esc(s.numero||'')}${s.prioridade&&s.prioridade!=='Normal'?` <span class="pill p-${PRIO[s.prioridade]}" style="font-size:11px;padding:1px 8px">${s.prioridade}</span>`:''}</div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([qtdTxt(s),s.fornecedor?'Forn.: '+s.fornecedor:'sem fornecedor indicado',s.solicitante?'por '+s.solicitante:'']))}</div></div><div class="side2"><span class="pill p-${st.c}">${st.l}</span>${s.dataNecessaria?`<small class="${daysTo(s.dataNecessaria)<15?'r':''}">em obra ${fmtD(s.dataNecessaria)}</small>`:''}${s.cotValor?`<small>${money(s.cotValor)}</small>`:''}</div></div>`};
+  const rowR=r=>`<div class="lrow" data-go="${esc(r.obra)}|requisicoes|req|${esc(r.id)}"><div class="main"><div class="num">${tag(r.obra)} ${esc(r.numero||'')}</div><div class="t">${esc(r.item)}</div><div class="m">${esc(join([qtdTxt(r),r.fornecedor]))}</div></div><div class="side2"><span class="pill p-${REQ_ST[r.status].c}">${REQ_ST[r.status].l}</span>${r.valorTotal?`<small>${money(r.valorTotal)}</small>`:''}${r.previsaoEntrega?`<small>entrega ${fmtD(r.previsaoEntrega)}</small>`:''}</div></div>`;
+  const panel=(t,sub,arr,f,empty)=>`<div class="panel"><div class="ph"><h2>${t}</h2><span class="mut" style="font-size:13px">${sub}</span></div>${arr.length?arr.map(f).join(''):`<div class="mut" style="padding:18px 4px">${empty}</div>`}</div>`;
+  $('#main').innerHTML=`
+  <div class="kpis">
+    <div class="kpi ${cotar.length?'al':''}"><div class="ic">${ico('cart')}</div><div><small>Para cotar</small><b>${cotar.length}</b></div></div>
+    <div class="kpi"><div class="ic">${ico('check')}</div><div><small>Cotadas · aguardando aprovação</small><b>${aguard.length}</b></div></div>
+    <div class="kpi ${emitir.length?'al':''}"><div class="ic">${ico('list')}</div><div><small>Requisições p/ emitir pedido</small><b>${emitir.length}</b></div></div>
+    <div class="kpi"><div class="ic">${ico('truck')}</div><div><small>Entregas em 15 dias</small><b>${entregas.length}</b></div></div>
+  </div>
+  <div class="row2">${panel('Para cotar','novas e em contato · por prazo',cotar,rowS,'Nada para cotar agora. 👌')}${panel('Requisições para emitir pedido','sem nº de pedido no ERP',emitir,rowR,'Nenhuma requisição pendente.')}</div>
+  <div class="row2">${panel('Aguardando aprovação da arquitetura','cotações já enviadas',aguard,rowS,'Nenhuma cotação aguardando.')}${panel('Entregas próximas','próximos 15 dias',entregas,rowR,'Nenhuma entrega prevista.')}</div>`;
 }
 function renderGeral(){
   const inScope=id=>UI.scope==='todas'||isMine(id);
@@ -909,19 +935,19 @@ function renderObra(){
     const semEtapas=!o.etAlvenaria&&!o.etAcabamentos&&!o.etEntrega;
     tb=`${packBanner(o.id)}
       <div class="atabs">${AREAS.map(([k,l])=>{const it=crO.filter(c=>areaOf(c)===k),lt=it.filter(c=>cronStatus(c).k==='late').length;return `<button class="atab ${UI.area===k?'on':''}" data-area="${k}">${l}<span class="c">${it.length}</span>${lt?`<span class="c al">${lt} atras.</span>`:''}</button>`}).join('')}</div>
-      ${semEtapas&&canWrite?`<div class="etb">📅 Informe as <b>etapas da obra</b> (alvenaria, acabamentos e entrega) para o sistema calcular quando pedir cada item e montar a linha do tempo. <button class="btn sm pri" data-editobra>Informar etapas</button></div>`:''}
+      ${semEtapas&&ARQ?`<div class="etb">📅 Informe as <b>etapas da obra</b> (alvenaria, acabamentos e entrega) para o sistema calcular quando pedir cada item e montar a linha do tempo. <button class="btn sm pri" data-editobra>Informar etapas</button></div>`:''}
       <div class="toolbar"><input type="search" id="q" placeholder="Buscar nesta área…" value="${esc(UI.q)}">
       <div class="vsw vper"><span>Ver por</span>${[['item','Item'],['ambiente','Ambiente'],['categoria','Categoria']].map(([k,l])=>`<button class="${UI.verPor===k?'on':''}" data-verpor="${k}">${l}</button>`).join('')}</div>
       <div class="vsw"><button class="${UI.cview==='prio'?'on':''}" data-cview="prio">${ico('list')} Prioridades</button><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
       ${prioFlow(crO.filter(c=>areaOf(c)===UI.area))}`;
     if(UI.cview==='prio')tb+=`<div class="hint">Ordem de compra sugerida: primeiro o que precisa ser pedido antes (data limite e prazo do fornecedor). Itens marcados como <b>Urgente</b> ou <b>Alta</b> sobem para o topo. ≈ = data estimada pela etapa da obra.</div>`;
     else if(UI.cview==='timeline')tb+=`<div class="hint">Barra = do <b>dia limite para pedir</b> até a <b>data em obra</b> (◆). Barra tracejada = data estimada pela etapa da obra.</div>`;
-    else if(canWrite)tb+=`<div class="hint">Edite direto na célula. Para incluir, digite na última linha e tecle <b>Enter</b> (ou cole linhas do Excel). Datas e prazos em branco usam a estimativa.</div>`;
+    else if(ARQ)tb+=`<div class="hint">Edite direto na célula. Para incluir, digite na última linha e tecle <b>Enter</b> (ou cole linhas do Excel). Datas e prazos em branco usam a estimativa.</div>`;
   }else if(UI.view==='solicitacoes'){
     tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, fornecedor, nº…" value="${esc(UI.q)}">
       <label class="chk"><input type="checkbox" id="cancel" ${UI.cancel?'checked':''}> Mostrar canceladas</label>
 </div>
-      ${canWrite?'<div class="hint">Arraste o cartão para mudar de etapa (no celular, use a seta <b>→</b>). Quando a cotação for aprovada, soltar em <b>Requisitada</b> gera a requisição de compra.</div>':''}`;
+      ${ARQ?'<div class="hint">Arraste o cartão para mudar de etapa (no celular, use a seta <b>→</b>). Quando a cotação for aprovada, soltar em <b>Requisitada</b> gera a requisição de compra.</div>':''}`;
   }else if(UI.view==='orcamento'){tb='';
   }else{
     const cnt=k=>k==='todas'?s.rq.length:s.rq.filter(x=>x.status===k).length;
@@ -930,14 +956,14 @@ function renderObra(){
       <div class="chips">${ch.map(([k,l])=>`<button class="chip ${UI.reqStatus===k?'on':''}" data-chip="reqStatus:${k}">${l}<em>${cnt(k)}</em></button>`).join('')}</div></div>`;
   }
   $('#main').innerHTML=`
-  <div class="ohero">${fotoDiv(o)}<div class="ov"><div><h1>${esc(o.nome)}</h1><div class="meta">${obraCod(o.id)?`<span class="chipw" style="background:rgba(255,255,255,.32);font-weight:500">${esc(obraCod(o.id))}</span>`:''}${o.fase?`<span class="chipw">${esc(o.fase)}</span>`:''}${o.responsavel?`<span class="chipw">Resp.: ${esc(userNome(o.responsavel))}</span>`:''}${canWrite?'<button class="chipw" style="border:0;color:#fff;font:inherit;font-size:12.5px;cursor:pointer" data-editobra>Editar obra / foto</button>':''}</div></div>
+  <div class="ohero">${fotoDiv(o)}<div class="ov"><div><h1>${esc(o.nome)}</h1><div class="meta">${obraCod(o.id)?`<span class="chipw" style="background:rgba(255,255,255,.32);font-weight:500">${esc(obraCod(o.id))}</span>`:''}${o.fase?`<span class="chipw">${esc(o.fase)}</span>`:''}${o.responsavel?`<span class="chipw">Resp.: ${esc(userNome(o.responsavel))}</span>`:''}${ARQ?'<button class="chipw" style="border:0;color:#fff;font:inherit;font-size:12.5px;cursor:pointer" data-editobra>Editar obra / foto</button>':''}</div></div>
     <div class="stt"><div><small>No cronograma</small><b>${s.cr.length}</b></div><div><small>Solicitações abertas</small><b>${s.abertas}</b></div><div><small>Requisitado</small><b>${s.total?money(s.total):s.ativas.length}</b></div>${(()=>{let L=0,U=0;CATS.forEach(c=>{const v=verbaOf(o.id,c);if(v.lim){L+=v.lim;U+=v.ped+v.prev}});return L?`<div><small>Saldo de verba</small><b style="${L-U<0?'color:#ffb4a4':''}">${money(L-U)}</b></div>`:''})()}</div></div></div>
   <div class="tabs">
     <button class="tab ${UI.view==='cronograma'?'on':''}" data-view="cronograma">Cronograma <span class="c ${s.late?'al':''}">${al?al+' p/ pedir':s.cr.length}</span></button>
     <button class="tab ${UI.view==='solicitacoes'?'on':''}" data-view="solicitacoes">Solicitações de cotação <span class="c">${s.abertas}</span></button>
     <button class="tab ${UI.view==='requisicoes'?'on':''}" data-view="requisicoes">Requisições de compra <span class="c">${s.ativas.length}</span></button>
     <button class="tab ${UI.view==='orcamento'?'on':''}" data-view="orcamento">Orçamento ${(()=>{const n=CATS.filter(c=>{const v=verbaOf(o.id,c);return v.lim&&v.saldo<0}).length;return n?`<span class="c al">${n} estourada${n>1?'s':''}</span>`:''})()}</button>
-    <span class="sp"></span>${canWrite&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação de cotação'}</button>`:''}
+    <span class="sp"></span>${ARQ&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação de cotação'}</button>`:''}
   </div>
   ${tb}
   <div id="items"></div>`;
@@ -970,7 +996,7 @@ function verbaBox(obraId,cat,valor,exceptSol){
     <div class="vbs">${val?`Esta compra: <b>${money(val)}</b> · `:''}${after<0?`<b>Estoura a verba em ${money(-after)}</b>`:`Saldo ${val?'depois desta compra':'disponível'}: <b>${money(after)}</b>`}</div></div>`;
 }
 function orcamentoView(){
-  const o=obraById(UI.obra),id=o.id,ro=canWrite?'':' disabled';
+  const o=obraById(UI.obra),id=o.id,ro=ARQ?'':' disabled';
   const usadas=new Set([...S.requisicoes,...S.solicitacoes,...S.cronograma].filter(x=>x.obra===id).map(x=>x.categoria).filter(Boolean));
   const cats=CATS.filter(c=>(o.verbas||{})[catKey(c)]||usadas.has(c)||UI.allcats);
   let T={lim:0,ped:0,prev:0};
@@ -1000,7 +1026,7 @@ function packPending(k){const p=PACKS[k];const o=obraById(p.obra)||{};const f=(o
   const done=new Set(Array.isArray(f)?f:(f?p.itens.filter(i=>!i.v).map(packKey):[]));
   return p.itens.filter(i=>!done.has(packKey(i)));}
 function packBanner(obraId){
-  if(!canWrite)return '';
+  if(!ARQ)return '';
   return Object.entries(PACKS).filter(([k,p])=>p.obra===obraId&&packPending(k).length).map(([k,p])=>{
     const pend=packPending(k),novo=pend.length<p.itens.length;
     return `<div class="pack"><div><b>📥 ${pend.length} ${novo?'itens novos':'itens'} prontos para importar</b><div class="m">${novo?esc(pend.map(i=>i.item+(i.local?' ('+i.local+')':'')).join(' · ')):esc(p.nome)+' — os itens marcados como sugestão você revisa depois.'}</div></div><button class="btn pri" data-pack="${k}">Importar para o cronograma</button></div>`}).join('');
@@ -1119,7 +1145,7 @@ function prioFlow(arr){
   }).join('');
   return `<div class="pflow-w"><div class="pflow-h"><b>Mapa de prioridades</b><small>o que precisa ser definido primeiro${G.some(x=>x.lim&&estimado(x.items.find(c=>limite(c)===x.lim)||{}))?' · datas com ≈ são estimadas pela etapa da obra':''}</small></div>
     <div class="pflow">${cols}</div>
-    ${sem.length?`<div class="psem">Sem data (${sem.length}): ${sem.map(x=>`<button class="lnk" data-jump="${esc(x.g)}">${esc(x.g)}</button>`).join(' · ')}${canWrite?' — <button class="lnk" data-editobra style="text-decoration:underline">informar etapas da obra</button>':''}</div>`:''}</div>`;
+    ${sem.length?`<div class="psem">Sem data (${sem.length}): ${sem.map(x=>`<button class="lnk" data-jump="${esc(x.g)}">${esc(x.g)}</button>`).join(' · ')}${ARQ?' — <button class="lnk" data-editobra style="text-decoration:underline">informar etapas da obra</button>':''}</div>`:''}</div>`;
 }
 function emptyArea(){return `<div class="empty"><b>${UI.q||UI.stage?'Nada com esses filtros':'Nenhum item nesta área'}</b>${UI.q||UI.stage?'':'Use “Novo item” ou a Planilha (dá para colar do Excel).'}</div>`}
 const stPill=c=>{const k=stageOf(c),cs=cronStatus(c);return k==='pedir'&&(cs.k==='late'||cs.k==='soon')?`<span class="pill p-${cs.k}">${esc(cs.l)}</span>`:`<span class="pill" style="background:${STC[k]};color:${['pedir','solicitado'].includes(k)?'#3e3b31':'#fff'}">${STAGES.find(s=>s[0]===k)[1]}</span>`};
@@ -1130,15 +1156,15 @@ function cronPrio(){
       <div class="pgt"><b>${esc(g)}</b><small>${UI.verPor==='item'?(tipo==='geral'?'Compra geral':'Ambiente'):UI.verPor==='ambiente'?'Ambiente':'Categoria'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
       <div class="pgd">${inf.first?`<small>pedir a partir de</small><b>${fmtD(inf.first)}</b>`:'<small>sem data</small>'}</div>
       <div class="pgb"><i style="width:${Math.round(inf.done/inf.n*100)}%"></i></div>
-      ${canWrite&&manual()?`<span class="gctl"><button class="ib" data-gup="${esc(g)}" title="Subir">↑</button><button class="ib" data-gdown="${esc(g)}" title="Descer">↓</button><button class="ib" data-gedit="${esc(g)}" title="Editar item">✎</button></span><button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
+      ${ARQ&&manual()?`<span class="gctl"><button class="ib" data-gup="${esc(g)}" title="Subir">↑</button><button class="ib" data-gdown="${esc(g)}" title="Descer">↓</button><button class="ib" data-gedit="${esc(g)}" title="Editar item">✎</button></span><button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
       ${op?`<div class="pgl">${items.map((c,i)=>{const sol=solOf(c.id);return `<div class="pi" data-cron="${esc(c.id)}"><span class="rk2">${gi+1}.${i+1}</span>
         <div class="main"><div class="t">${esc(c.item)}${c.prio&&c.prio!=='Normal'?` <span class="pill p-${PRIO[c.prio]}" style="font-size:11px;padding:1px 8px">${c.prio}</span>`:''}${/^Sugestão/.test(c.obs||'')?' <span class="sug">sugestão</span>':''}</div>
         <div class="m">${esc(join([UI.verPor==='ambiente'?c.categoria:UI.verPor==='categoria'?c.local:(tipo==='geral'?c.local:c.categoria),qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div>
         <div class="pdt"><small>pedir até</small><b class="${cronStatus(c).k}">${lTxt(c)}</b></div><div class="pdt"><small>em obra</small><b>${dTxt(c)}</b></div>
         <div class="pst">${stPill(c)}</div>
-        <div class="pac">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div>
-        ${canWrite&&manual()?`<span class="sctl"><button class="ib" data-sup="${esc(c.id)}" title="Subir">↑</button><button class="ib" data-sdown="${esc(c.id)}" title="Descer">↓</button></span>`:''}</div>`}).join('')}</div>`:''}</div>`}).join('')}</div>
-    ${canWrite&&manual()?'<button class="btn" style="margin-top:12px" data-novogrupo>+ Novo item</button>':''}`;
+        <div class="pac">${!sol&&ARQ?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div>
+        ${ARQ&&manual()?`<span class="sctl"><button class="ib" data-sup="${esc(c.id)}" title="Subir">↑</button><button class="ib" data-sdown="${esc(c.id)}" title="Descer">↓</button></span>`:''}</div>`}).join('')}</div>`:''}</div>`}).join('')}</div>
+    ${ARQ&&manual()?'<button class="btn" style="margin-top:12px" data-novogrupo>+ Novo item</button>':''}`;
 }
 function cronTimeline(){
   const arr=cronFiltered();if(!arr.length)return emptyArea();
@@ -1174,16 +1200,16 @@ function cronTimeline(){
       <div class="today" style="left:calc(var(--lw) + ${x(T)}px)"><span>hoje</span></div></div></div>
       <div class="tleg">${STAGES.map(([k,l,c])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}<span><i class="lg-late"></i>Prazo vencido</span><span><i class="lg-est"></i>Data estimada</span><span>◆ = em obra</span></div>`;
   }
-  if(undated.length)html+=`<div class="panel" style="margin-top:16px"><div class="ph"><h2 style="font-size:16px">Sem data <span class="mut">(${undated.length})</span></h2>${canWrite?'<button class="btn sm pri" data-editobra>Informar etapas da obra</button>':''}</div><div class="mut" style="font-size:13.5px">Esses itens aparecem na linha do tempo assim que a obra tiver as etapas informadas (ou quando você definir a data em obra deles).</div></div>`;
+  if(undated.length)html+=`<div class="panel" style="margin-top:16px"><div class="ph"><h2 style="font-size:16px">Sem data <span class="mut">(${undated.length})</span></h2>${ARQ?'<button class="btn sm pri" data-editobra>Informar etapas da obra</button>':''}</div><div class="mut" style="font-size:13.5px">Esses itens aparecem na linha do tempo assim que a obra tiver as etapas informadas (ou quando você definir a data em obra deles).</div></div>`;
   return html;
 }
 function cronTable(){
-  const ro=canWrite?'':' disabled';
+  const ro=ARQ?'':' disabled';
   const arr=cronFiltered();
   const NC=14;let rows='';
   grouped(arr).forEach(({g,items,tipo},gi)=>{
     const inf=grpInfo(items),op=isOpen(g);
-    rows+=`<tr class="mrow" data-tog="${esc(g)}"><td colspan="${NC}"><span class="chev">${op?'▾':'▸'}</span><span class="rk sm">${gi+1}</span>${esc(g)}<span class="gi">${tipo==='geral'?'compra geral':'ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</span>${canWrite?`<button class="lnk addamb" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}</td></tr>`;
+    rows+=`<tr class="mrow" data-tog="${esc(g)}"><td colspan="${NC}"><span class="chev">${op?'▾':'▸'}</span><span class="rk sm">${gi+1}</span>${esc(g)}<span class="gi">${tipo==='geral'?'compra geral':'ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</span>${ARQ?`<button class="lnk addamb" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}</td></tr>`;
     if(!op)return;
     items.forEach(c=>{
       const st=cronStatus(c),sol=solOf(c.id);
@@ -1201,12 +1227,12 @@ function cronTable(){
       <td class="calc ${st.k==='late'||st.k==='soon'?st.k:''}">${lTxt(c)}</td>
       <td style="width:100px"><select class="cell" data-f="prio"${ro}>${['Normal','Alta','Urgente'].map(p=>`<option${(c.prio||'Normal')===p?' selected':''}>${p}</option>`).join('')}</select></td>
       <td class="calc">${sol?`<span class="pill p-${st.k} pl" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')} · ${esc(st.l)}</span>`:`<span class="pill p-${st.k}">${esc(st.l)}</span>`}</td>
-      <td class="act">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button> `:''}<button class="ib" data-cron="${esc(c.id)}" title="Detalhes">⋯</button></td>
+      <td class="act">${!sol&&ARQ?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button> `:''}<button class="ib" data-cron="${esc(c.id)}" title="Detalhes">⋯</button></td>
     </tr>`;
     });
   });
   if(!arr.length&&(UI.q||UI.stage))rows=`<tr><td colspan="${NC}" class="calc mut" style="height:60px;text-align:center">Nada encontrado com esses filtros.</td></tr>`;
-  if(canWrite)rows+=`<tr class="addrow"><td colspan="${NC}"><input id="addcron" placeholder="+ Adicionar item nesta área — digite e Enter, ou cole linhas do Excel" autocomplete="off"></td></tr>`;
+  if(ARQ)rows+=`<tr class="addrow"><td colspan="${NC}"><input id="addcron" placeholder="+ Adicionar item nesta área — digite e Enter, ou cole linhas do Excel" autocomplete="off"></td></tr>`;
   return `<datalist id="dl-grupos2">${[...new Set(S.cronograma.filter(x=>x.obra===UI.obra).map(grpOf))].sort().map(g=>`<option value="${esc(g)}">`).join('')}</datalist><div class="tw"><table class="st" style="min-width:1590px"><thead><tr><th>Subitem</th><th>Item (grupo)</th><th>Área</th><th>Categoria</th><th>Compra</th><th>Ambiente</th><th>Qtd</th><th>Un</th><th>Em obra</th><th>Prazo (d)</th><th>Pedir até</th><th>Prioridade</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 async function cellChange(el){
@@ -1248,7 +1274,7 @@ function solBoard(){
     const novas=k==='nova'?arr.filter(s=>!s.emailEm).length:0;
     return `<div class="col" data-col="${k}">
       <div class="colh"><div><span class="dot" style="background:${st.d}"></span><b>${st.l}</b><em>${arr.length}</em></div></div>
-      ${k==='nova'&&canWrite?`<div class="colx"><button class="btn sm" data-newsol>+ Nova</button>${arr.length?`<button class="btn sm pri" data-mailbatch>✉ Enviar ${novas||arr.length}</button>`:''}</div>`:''}
+      ${k==='nova'&&ARQ?`<div class="colx"><button class="btn sm" data-newsol>+ Nova</button>${arr.length?`<button class="btn sm pri" data-mailbatch>✉ Enviar ${novas||arr.length}</button>`:''}</div>`:''}
       ${arr.length?arr.map(solCard).join(''):'<div class="kempty">Arraste para cá</div>'}
     </div>`}).join('')}</div>`;
 }
@@ -1261,12 +1287,13 @@ function solCard(s){
     ${SOL_OPEN.includes(s.status)&&faltando(s).length?`<div class="inc">Falta: ${esc(faltando(s).join(', '))}</div>`:''}${s.cotValor&&s.categoria&&SOL_OPEN.includes(s.status)&&(()=>{const v=verbaOf(s.obra,s.categoria,s.id);return v.lim&&v.saldo-s.cotValor<0})()?`<div class="inc">⚠ Estoura a verba de ${esc(s.categoria)}</div>`:''}${(s.anexos||[]).length?`<div class="m">📎 ${s.anexos.length} anexo${s.anexos.length>1?'s':''}</div>`:''}
     <div class="m">${s.fornecedor?esc(s.fornecedor):'<i>Sem fornecedor indicado</i>'}</div>
     <div class="kf"><span class="${s.dataNecessaria&&daysTo(s.dataNecessaria)<7&&SOL_OPEN.includes(s.status)?'calc soon':'m'}" style="padding:0!important;margin:0">${s.dataNecessaria?'Em obra '+fmtD(s.dataNecessaria):''}</span>
-      <span class="bt">${s.cotValor?`<span class="v">${money(s.cotValor)}</span>`:''}<button class="ib" data-mailsol="${esc(s.id)}" title="Enviar por e-mail">✉</button>${nx&&canWrite?`<button class="ib y" data-adv="${esc(s.id)}" title="Avançar para ${SOL_ST[nx].l}">→</button>`:''}</span></div>
+      <span class="bt">${s.cotValor?`<span class="v">${money(s.cotValor)}</span>`:''}${isCompras()?'':`<button class="ib" data-mailsol="${esc(s.id)}" title="Enviar por e-mail">✉</button>`}${nx&&canWrite&&(!isCompras()||['contato','cotada'].includes(nx))?`<button class="ib y" data-adv="${esc(s.id)}" title="Avançar para ${SOL_ST[nx].l}">→</button>`:''}</span></div>
     ${s.emailEm?`<div class="sent">✓ E-mail gerado ${fmtD(String(s.emailEm).slice(0,10))}</div>`:''}
   </div>`;
 }
 async function moveSol(id,to){
   const s=byId('solicitacoes',id);if(!s||s.status===to||!canWrite)return;
+  if(isCompras()&&!(['contato','cotada'].includes(to)&&SOL_FLOW.indexOf(to)>SOL_FLOW.indexOf(s.status))){toast('Aprovar e gerar requisição é com a arquitetura.');return}
   if(to==='requisitada'){
     if(s.status!=='aprovada'){toast('Só solicitações aprovadas viram requisição.');return}
     return gerarReq(s);
@@ -1294,16 +1321,16 @@ function reqTable(){
     <td style="width:140px"><input class="cell" type="date" data-f="previsaoEntrega" value="${esc(r.previsaoEntrega||'')}"${ro}></td>
     <td style="width:130px"><select class="cell" data-f="status"${ro}>${Object.keys(REQ_ST).map(k=>`<option value="${k}"${r.status===k?' selected':''}>${REQ_ST[k].l}</option>`).join('')}</select></td>
     <td style="width:130px"><input class="cell" data-f="pedidoNum" value="${esc(r.pedidoNum||'')}" placeholder="—"${ro}></td>
-    <td class="act"><button class="ib ${r.emailEm?'':'y'}" data-mailreq="${esc(r.id)}" title="Enviar por e-mail">✉</button> <button class="ib" data-req="${esc(r.id)}" title="Detalhes">⋯</button></td>
+    <td class="act">${isCompras()?'':`<button class="ib ${r.emailEm?'':'y'}" data-mailreq="${esc(r.id)}" title="Enviar por e-mail">✉</button> `}<button class="ib" data-req="${esc(r.id)}" title="Detalhes">⋯</button></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---------- formulários ---------- */
 function fieldHTML(f,o){
   if(f.s) return `<div class="sec">${esc(f.s)}</div>`;
-  if(f.t==='anexos') return `<div class="w2"><div class="anx" id="anx"></div>${canWrite?'<label class="btn sm" style="cursor:pointer;margin-top:6px">📎 Anexar projeto / desenho (PDF ou imagem)<input type="file" multiple accept="application/pdf,image/*" id="sfile" hidden></label>':''}</div>`;
+  if(f.t==='anexos') return `<div class="w2"><div class="anx" id="anx"></div>${ARQ?'<label class="btn sm" style="cursor:pointer;margin-top:6px">📎 Anexar projeto / desenho (PDF ou imagem)<input type="file" multiple accept="application/pdf,image/*" id="sfile" hidden></label>':''}</div>`;
   let v=o[f.k];v=v==null?'':v;
-  const ro=canWrite?'':' disabled';
+  const ro=canWrite&&(!RO_ALLOW||RO_ALLOW.has(f.k))?'':' disabled';
   let inp;
   if(f.t==='select') inp=`<select name="${f.k}"${ro}>${f.nb?'':'<option value=""></option>'}${f.o.map(x=>`<option value="${esc(x)}"${String(v)===String(x)?' selected':''}>${esc(f.ol?f.ol[x].l:x)}</option>`).join('')}</select>`;
   else if(f.t==='area') inp=`<textarea name="${f.k}" rows="3" placeholder="${esc(f.ph||'')}"${ro}>${esc(v)}</textarea>`;
@@ -1612,7 +1639,7 @@ function openCron(c,pre){
   const sol=!isNew&&solOf(c.id);
   const save=async f=>{const o=Object.assign({},c,readForm(F_CRON,f));const miss=missing(F_CRON,o);if(miss.length){toast('Preencha: '+miss.join(', '));return null}await put('cronograma',o);return o};
   const b=[];
-  if(canWrite){
+  if(ARQ){
     if(!isNew&&!sol)b.push({l:'Excluir',cls:'ghost danger',confirm:'Confirmar exclusão',fn:async()=>{await del('cronograma',c.id);closeModal();toast('Item excluído')}});
     b.push({l:'Salvar',fn:async f=>{if(await save(f)){closeModal();toast('Item salvo')}}});
     if(!sol)b.push({l:'Salvar e solicitar →',cls:'pri',fn:async f=>{const o=await save(f);if(o){closeModal();openSol(null,o)}}});
@@ -1669,7 +1696,11 @@ function openSol(s,cron,target){
         await put('solicitacoes',o);return o;
   };
   const b=[];
-  if(canWrite){
+  if(canWrite&&isCompras()&&!isNew){
+    b.push({l:'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();toast('Cotação salva')}}});
+    const NXc={nova:['Iniciar contato →','contato'],contato:['Marcar como cotada →','cotada']};
+    if(NXc[st]){const[l,ns]=NXc[st];b.push({l,cls:'pri',fn:async f=>{const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
+  }else if(canWrite){
     if(!isNew){const rq=reqOf(s.id);b.push({l:'Excluir',cls:'ghost danger',confirm:rq?`Excluir também ${rq.numero}?`:'Confirmar exclusão',fn:async()=>{
       if(rq)await del('requisicoes',rq.id);
       await del('solicitacoes',s.id);closeModal();toast(rq?`Solicitação ${s.numero} e requisição ${rq.numero} excluídas`:`Solicitação ${s.numero||''} excluída`)}})}
@@ -1692,7 +1723,7 @@ function openSol(s,cron,target){
   openModal({
     title:isNew?'Nova solicitação de cotação':esc(join([s.numero,s.item],' — ')),
     sub:esc(join([obraNomeCod(s.obra),cron?'a partir do cronograma':''])),
-    body:flow+tools+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
+    body:flow+tools+(isCompras()&&st==='cotada'?'<div class="note" style="margin:0 0 12px">Cotação enviada — aguardando aprovação da arquitetura.</div>':'')+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+(()=>{RO_ALLOW=isCompras()?new Set(['cotValor','cotPrazo','cotPagamento','cotObs','fornecedor','contato','telefone','email']):null;const h=formHTML(F_SOL,s);RO_ALLOW=null;return h})()+hist,buttons:b});
   MODAL_CTX={spec:F_SOL,msg:v=>quoteMsg(Object.assign({},s,v,{anexos:MODAL_CTX.anexos})),anexos:(s.anexos||[]).slice()};
   MODAL_CTX.autosave=isNew?null:async()=>{await patch('solicitacoes',s.id,{anexos:MODAL_CTX.anexos})};
   const upd=()=>{const v=Object.assign({},s,readForm(F_SOL,$('#mform')),{anexos:MODAL_CTX.anexos});const vb=$('#vbw');if(vb)vb.innerHTML=verbaBox(s.obra,v.categoria,v.cotValor,s.id);$('#ckl').innerHTML=`<span class="ckt">Checklist da cotação</span>`+checkOf(v).map(c=>`<span class="ck ${c.ok?'ok':c.opc?'opc':'no'}">${c.ok?'✓':c.opc?'○':'!'} ${c.l}</span>`).join('')};
@@ -1733,20 +1764,20 @@ function reqText(r){
 function openReq(r){
   const sol=r.solId&&byId('solicitacoes',r.solId);
   const b=[];
-  if(canWrite)b.push({l:'Excluir',cls:'ghost danger',confirm:'Excluir e voltar p/ aprovada?',fn:async()=>{
+  if(ARQ)b.push({l:'Excluir',cls:'ghost danger',confirm:'Excluir e voltar p/ aprovada?',fn:async()=>{
     await del('requisicoes',r.id);
     if(sol&&sol.status==='requisitada')await put('solicitacoes',Object.assign({},sol,{status:'aprovada',hist:(sol.hist||[]).concat([{st:'aprovada',em:nowISO()}])}));
     closeModal();toast('Requisição excluída')}});
   if(canWrite)b.push({l:'Salvar',fn:async f=>{
     const o=Object.assign({},byId('requisicoes',r.id)||r,readForm(F_REQ,f));const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}
     await put('requisicoes',o);closeModal();toast('Requisição salva')}});
-  b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{
+  if(ARQ)b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{
     let o=Object.assign({},byId('requisicoes',r.id)||r,canWrite?readForm(F_REQ,f):{});
     if(canWrite){const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}await put('requisicoes',o)}
     closeModal();mailReq(o)}});
   MODAL_CTX=null;
   openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
-    body:formHTML(F_REQ,r)+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
+    body:(()=>{RO_ALLOW=isCompras()?new Set(['status','pedidoNum','previsaoEntrega','pagamento','valorTotal','obs','cnpj']):null;const h=formHTML(F_REQ,r);RO_ALLOW=null;return h})()+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
 }
 
 /* ---------- copiar / toast ---------- */
