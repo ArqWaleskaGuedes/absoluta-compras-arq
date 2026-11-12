@@ -834,7 +834,7 @@ function renderGeral(){
   const prog=id=>{const c=S.cronograma.filter(x=>x.obra===id);if(!c.length)return 0;return Math.round(c.filter(x=>['pedido','entregue'].includes(cronBucket(x))).length/c.length*100)};
   $('#main').innerHTML=`
   <div class="kpis">
-    <div class="kpi"><div class="ic">${ico('cart')}</div><div><small>Compras em andamento</small><b>${andamento}</b></div></div>
+    <div class="kpi"><div class="ic">${ico('cart')}</div><div><small>Cotações em andamento</small><b>${andamento}</b></div></div>
     <div class="kpi"><div class="ic">${ico('check')}</div><div><small>Pedidos aprovados</small><b>${aprovados}</b></div></div>
     <div class="kpi"><div class="ic">${ico('truck')}</div><div><small>Entregas previstas</small><b>${entregas}</b></div></div>
     <div class="kpi ${late?'al':''}"><div class="ic">${ico('warn')}</div><div><small>Atrasos</small><b>${late}</b></div></div>
@@ -855,10 +855,10 @@ function renderGeral(){
         <div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNomeCod(c.obra),c.local,qtdTxt(c)]))}</div></div>
         <div class="side2"><span class="pill p-${st.k}">${esc(st.l)}</span></div></div>`).join(''):'<div class="mut" style="padding:20px 4px">Nenhum prazo vencendo. 👌</div>'}
     </div>
-    <div class="panel"><div class="ph"><h2>Fila de compras</h2><span class="mut" style="font-size:13px">${fila.length} em andamento</span></div>
+    <div class="panel"><div class="ph"><h2>Cotações em andamento</h2><span class="mut" style="font-size:13px">${fila.length} em andamento</span></div>
       ${fila.length?fila.map(s=>{const st=SOL_ST[s.status];return `<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}">
         <div class="main"><div class="num">${esc(s.numero||'')} <span class="tag">${esc(obraNomeCod(s.obra))}</span></div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([qtdTxt(s),s.fornecedor]))}</div></div>
-        <div class="side2"><span class="pill p-${st.c}">${st.l}</span>${s.dataNecessaria?`<small>Em obra ${fmtD(s.dataNecessaria)}</small>`:''}</div></div>`}).join(''):'<div class="mut" style="padding:20px 4px">Nenhuma solicitação em andamento.</div>'}
+        <div class="side2"><span class="pill p-${st.c}">${st.l}</span>${s.dataNecessaria?`<small>Em obra ${fmtD(s.dataNecessaria)}</small>`:''}</div></div>`}).join(''):'<div class="mut" style="padding:20px 4px">Nenhuma cotação em andamento.</div>'}
     </div>
   </div>`;
 }
@@ -868,8 +868,8 @@ function renderSearch(){
   const sec=(t,arr,f)=>arr.length?`<div class="panel" style="margin-bottom:16px"><div class="ph"><h2>${t}</h2><span class="mut">${arr.length}</span></div>${arr.slice(0,40).map(f).join('')}</div>`:'';
   $('#main').innerHTML=`<div style="margin-bottom:14px" class="mut">Resultados para “${esc(UI.gq)}” <button class="lnk" data-clearq style="margin-left:8px;text-decoration:underline">limpar</button></div>`+
    (sec('Cronograma',cr,c=>{const st=cronStatus(c);return `<div class="lrow" data-go="${esc(c.obra)}|cronograma|cron|${esc(c.id)}"><div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNomeCod(c.obra),c.local,qtdTxt(c)]))}</div></div><div class="side2"><span class="pill p-${st.k}">${esc(st.l)}</span></div></div>`})+
-    sec('Solicitações',so,s=>`<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}"><div class="main"><div class="num">${esc(s.numero||'')}</div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([obraNomeCod(s.obra),s.fornecedor]))}</div></div><div class="side2"><span class="pill p-${SOL_ST[s.status].c}">${SOL_ST[s.status].l}</span></div></div>`)+
-    sec('Requisições',rq,r=>`<div class="lrow" data-go="${esc(r.obra)}|requisicoes|req|${esc(r.id)}"><div class="main"><div class="num">${esc(r.numero||'')}</div><div class="t">${esc(r.item)}</div><div class="m">${esc(join([obraNomeCod(r.obra),r.fornecedor]))}</div></div><div class="side2"><span class="pill p-${REQ_ST[r.status].c}">${REQ_ST[r.status].l}</span>${r.valorTotal?`<small>${money(r.valorTotal)}</small>`:''}</div></div>`)
+    sec('Solicitações de cotação',so,s=>`<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}"><div class="main"><div class="num">${esc(s.numero||'')}</div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([obraNomeCod(s.obra),s.fornecedor]))}</div></div><div class="side2"><span class="pill p-${SOL_ST[s.status].c}">${SOL_ST[s.status].l}</span></div></div>`)+
+    sec('Requisições de compra',rq,r=>`<div class="lrow" data-go="${esc(r.obra)}|requisicoes|req|${esc(r.id)}"><div class="main"><div class="num">${esc(r.numero||'')}</div><div class="t">${esc(r.item)}</div><div class="m">${esc(join([obraNomeCod(r.obra),r.fornecedor]))}</div></div><div class="side2"><span class="pill p-${REQ_ST[r.status].c}">${REQ_ST[r.status].l}</span>${r.valorTotal?`<small>${money(r.valorTotal)}</small>`:''}</div></div>`)
     ||'<div class="empty">Nada encontrado.</div>');
 }
 function renderObra(){
@@ -892,7 +892,7 @@ function renderObra(){
     tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, fornecedor, nº…" value="${esc(UI.q)}">
       <label class="chk"><input type="checkbox" id="cancel" ${UI.cancel?'checked':''}> Mostrar canceladas</label>
 </div>
-      ${canWrite?'<div class="hint">Arraste o cartão para mudar de etapa (no celular, use a seta <b>→</b>). Soltar em <b>Requisitada</b> gera a requisição.</div>':''}`;
+      ${canWrite?'<div class="hint">Arraste o cartão para mudar de etapa (no celular, use a seta <b>→</b>). Quando a cotação for aprovada, soltar em <b>Requisitada</b> gera a requisição de compra.</div>':''}`;
   }else if(UI.view==='orcamento'){tb='';
   }else{
     const cnt=k=>k==='todas'?s.rq.length:s.rq.filter(x=>x.status===k).length;
@@ -905,10 +905,10 @@ function renderObra(){
     <div class="stt"><div><small>No cronograma</small><b>${s.cr.length}</b></div><div><small>Solicitações abertas</small><b>${s.abertas}</b></div><div><small>Requisitado</small><b>${s.total?money(s.total):s.ativas.length}</b></div>${(()=>{let L=0,U=0;CATS.forEach(c=>{const v=verbaOf(o.id,c);if(v.lim){L+=v.lim;U+=v.ped+v.prev}});return L?`<div><small>Saldo de verba</small><b style="${L-U<0?'color:#ffb4a4':''}">${money(L-U)}</b></div>`:''})()}</div></div></div>
   <div class="tabs">
     <button class="tab ${UI.view==='cronograma'?'on':''}" data-view="cronograma">Cronograma <span class="c ${s.late?'al':''}">${al?al+' p/ pedir':s.cr.length}</span></button>
-    <button class="tab ${UI.view==='solicitacoes'?'on':''}" data-view="solicitacoes">Solicitações <span class="c">${s.abertas}</span></button>
-    <button class="tab ${UI.view==='requisicoes'?'on':''}" data-view="requisicoes">Requisições <span class="c">${s.ativas.length}</span></button>
+    <button class="tab ${UI.view==='solicitacoes'?'on':''}" data-view="solicitacoes">Solicitações de cotação <span class="c">${s.abertas}</span></button>
+    <button class="tab ${UI.view==='requisicoes'?'on':''}" data-view="requisicoes">Requisições de compra <span class="c">${s.ativas.length}</span></button>
     <button class="tab ${UI.view==='orcamento'?'on':''}" data-view="orcamento">Orçamento ${(()=>{const n=CATS.filter(c=>{const v=verbaOf(o.id,c);return v.lim&&v.saldo<0}).length;return n?`<span class="c al">${n} estourada${n>1?'s':''}</span>`:''})()}</button>
-    <span class="sp"></span>${canWrite&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação'}</button>`:''}
+    <span class="sp"></span>${canWrite&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação de cotação'}</button>`:''}
   </div>
   ${tb}
   <div id="items"></div>`;
@@ -1325,20 +1325,20 @@ function solRows(s){
 }
 function solBlocks(s,withResumo){
   const r=solRows(s),B=[];
-  if(withResumo)B.push({h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(s.obra)],['Solicitação',s.numero],['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],['Solicitante',s.solicitante||meNome()]]});
-  B.push({h:withResumo?'O que comprar':`${s.numero} — ${s.item}`,rows:withResumo?r.o:[['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],...r.o]});
+  if(withResumo)B.push({h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(s.obra)],['Solicitação de cotação',s.numero],['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],['Solicitante',s.solicitante||meNome()]]});
+  B.push({h:withResumo?'O que cotar':`${s.numero} — ${s.item}`,rows:withResumo?r.o:[['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],...r.o]});
   if(r.pj.some(x=>x[1]))B.push({h:withResumo?'Projeto / desenho técnico':'Projeto',rows:r.pj});
   if(r.obs)B.push({h:'Informações importantes',text:r.obs});
   if(r.f.some(x=>x[1]))B.push({h:'Fornecedor indicado',rows:r.f});
   return B;
 }
-const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e pedir orçamento exatamente com estas especificações.','Retornar valor total, prazo de entrega e condição de pagamento — pode responder este e-mail ou registrar no sistema.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
+const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e cotar exatamente com estas especificações.','Retornar a cotação: valor total, prazo de entrega e condição de pagamento — pode responder este e-mail ou registrar no sistema.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
 function mailSol(s){
   if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes de enviar: '+faltando(s).join(', '));return}
   MAIL_ANX=(s.anexos||[]);
   const pz=prazoTxt(s);
-  openMail({title:'Enviar solicitação',subject:`[COMPRAS ARQ] ${obraCod(s.obra)||obraNome(s.obra)} | ${s.numero} | ${s.item}${pz?' | em obra até '+pz.slice(0,5):''}${s.prioridade&&s.prioridade!=='Normal'?' | '+s.prioridade.toUpperCase():''}`,
-    doc:{saud:'Olá, equipe de compras!',intro:`Segue uma nova solicitação de compra da Arquitetura para a obra ${obraNomeCod(s.obra)}.`,
+  openMail({title:'Enviar solicitação de cotação',subject:`[COTAÇÃO ARQ] ${obraCod(s.obra)||obraNome(s.obra)} | ${s.numero} | ${s.item}${pz?' | em obra até '+pz.slice(0,5):''}${s.prioridade&&s.prioridade!=='Normal'?' | '+s.prioridade.toUpperCase():''}`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Segue uma nova solicitação de cotação da Arquitetura para a obra ${obraNomeCod(s.obra)}. Por favor, cotar o item abaixo.`,
       blocks:[...solBlocks(s,true),{h:'O que precisamos de você',steps:PASSOS_SOL}]},
     onOpen:()=>{if(canWrite)patch('solicitacoes',s.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
@@ -1351,19 +1351,19 @@ function mailBatch(){
   if(inc)setTimeout(()=>toast(`${inc} incompleta${inc>1?'s':''} ficou de fora do e-mail.`),300);
   MAIL_ANX=list.flatMap(s=>s.anexos||[]);
   const n=list.length;
-  const blocks=[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(UI.obra)],['Quantidade de solicitações',String(n)],['Solicitante',meNome()]]},
-    {h:'Lista de solicitações',table:{head:['Nº','Produto','Qtd','Em obra até','Prioridade'],rows:list.map(s=>[s.numero,s.item,qtdTxt(s),prazoTxt(s),s.prioridade||'Normal'])}}];
+  const blocks=[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(UI.obra)],['Itens para cotar',String(n)],['Solicitante',meNome()]]},
+    {h:'Lista de itens para cotar',table:{head:['Nº','Produto','Qtd','Em obra até','Prioridade'],rows:list.map(s=>[s.numero,s.item,qtdTxt(s),prazoTxt(s),s.prioridade||'Normal'])}}];
   list.forEach(s=>blocks.push(...solBlocks(s,false)));
   blocks.push({h:'O que precisamos de você',steps:PASSOS_SOL});
-  openMail({title:`Enviar ${n} solicitaç${n>1?'ões':'ão'}`,subject:`[COMPRAS ARQ] ${obraCod(UI.obra)||obraNome(UI.obra)} | ${n} nova${n>1?'s':''} solicitaç${n>1?'ões':'ão'} de compra`,
-    doc:{saud:'Olá, equipe de compras!',intro:`Seguem ${n} novas solicitações de compra da Arquitetura para a obra ${obraNomeCod(UI.obra)}. A lista abaixo está em ordem de prazo.`,blocks},
+  openMail({title:`Enviar ${n} solicitaç${n>1?'ões':'ão'}`,subject:`[COTAÇÃO ARQ] ${obraCod(UI.obra)||obraNome(UI.obra)} | ${n} nova${n>1?'s':''} solicitaç${n>1?'ões':'ão'} de cotação`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Seguem ${n} novas solicitações de cotação da Arquitetura para a obra ${obraNomeCod(UI.obra)}. A lista abaixo está em ordem de prazo.`,blocks},
     onOpen:async()=>{if(!canWrite)return;for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}}});
 }
 function mailReq(r){
   const sol=r.solId&&byId('solicitacoes',r.solId);MAIL_ANX=(sol&&sol.anexos)||[];
-  openMail({title:'Enviar requisição',subject:`[COMPRAS ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item} | ${r.fornecedor||''} | EMITIR PEDIDO`,
-    doc:{saud:'Olá, equipe de compras!',intro:`A compra abaixo foi aprovada pela Arquitetura. Por favor, emitir o pedido.`,
-      blocks:[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(r.obra)],['Requisição',r.numero],['Ref. solicitação',r.solNumero],['Valor total',money(r.valorTotal)],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):'']]},
+  openMail({title:'Enviar requisição de compra',subject:`[REQUISIÇÃO DE COMPRA ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item} | ${r.fornecedor||''} | EMITIR PEDIDO`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Segue requisição de compra: a cotação abaixo foi aprovada pela Arquitetura. Por favor, emitir o pedido de compra.`,
+      blocks:[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Ref. solicitação de cotação',r.solNumero],['Valor total',money(r.valorTotal)],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):'']]},
         {h:'Item',rows:[['Produto',r.item],['Quantidade',qtdTxt(r)],['Ambiente / aplicação',r.local],['Especificação',r.especificacao]]},
         {h:'Fornecedor',rows:[['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',r.contato],['Telefone',r.telefone],['E-mail',r.email]]},
         {h:'Condições',rows:[['Valor total',money(r.valorTotal)],['Pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto]]},
@@ -1425,7 +1425,7 @@ function openCron(c,pre){
   openModal({
     title:isNew?'Novo item do cronograma':esc(c.item),
     sub:esc(join([obraNomeCod(c.obra),L?'Pedir até '+fmtDY(L):''])),
-    body:formHTML(F_CRON,c)+(sol?`<div class="note">Este item já tem a solicitação <b>${esc(sol.numero)}</b> (${SOL_ST[sol.status].l}). <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),
+    body:formHTML(F_CRON,c)+(sol?`<div class="note">Este item já tem a solicitação de cotação <b>${esc(sol.numero)}</b> (${SOL_ST[sol.status].l}). <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),
     buttons:b});
 }
 
@@ -1434,7 +1434,7 @@ function specLines(s){
   return [s.modelo||s.marca?'Modelo/referência: '+join([s.modelo,s.marca],' · '):'',s.acabamento?'Cor e características: '+s.acabamento:'',s.dimensoes?'Medidas: '+s.dimensoes:'',s.referencia?'Projeto: '+s.referencia:'',(s.anexos||[]).length?'Anexos: '+s.anexos.map(a=>a.nome).join(', '):'',s.especificacao?'Outras informações: '+s.especificacao:''].filter(Boolean);
 }
 function quoteMsg(s){
-  const L=[`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de um orçamento para a obra ${obraNomeCod(s.obra)}:`,'',`• Produto: ${s.item||''}`];
+  const L=[`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de uma cotação para a obra ${obraNomeCod(s.obra)}:`,'',`• Produto: ${s.item||''}`];
   if(qtdTxt(s))L.push(`• Quantidade: ${qtdTxt(s)}`);
   if(s.modelo||s.marca)L.push(`• Modelo / referência: ${join([s.modelo,s.marca],' · ')}`);
   if(s.acabamento)L.push(`• Cor e características: ${s.acabamento}`);
@@ -1476,22 +1476,22 @@ function openSol(s,cron,target){
     if(!isNew&&st==='nova')b.push({l:'Excluir',cls:'ghost danger',confirm:'Confirmar exclusão',fn:async()=>{await del('solicitacoes',s.id);closeModal();toast('Solicitação excluída')}});
     else if(!isNew&&['contato','cotada','aprovada'].includes(st))b.push({l:'Cancelar',cls:'ghost danger',confirm:'Confirmar cancelamento',fn:async f=>{if(await save(f,'cancelada')){closeModal();toast('Solicitação cancelada')}}});
     b.push({l:isNew?'Salvar rascunho':'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();const fl=faltando(o);toast(fl.length?`${o.numero} salva — falta: ${fl.join(', ')}`:(isNew?`Solicitação ${o.numero} criada`:'Salvo'))}}});
-    const NX={nova:['Iniciar contato →','contato'],contato:['Marcar como cotada →','cotada'],cotada:['Aprovar compra →','aprovada'],aprovada:['Gerar requisição →','REQ'],cancelada:['Reabrir','nova']};
+    const NX={nova:['Iniciar contato →','contato'],contato:['Marcar como cotada →','cotada'],cotada:['Aprovar cotação →','aprovada'],aprovada:['Gerar requisição de compra →','REQ'],cancelada:['Reabrir','nova']};
     if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
-    if(isNew||st==='nova')b.push({l:'Salvar e enviar p/ compras ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
+    if(isNew||st==='nova')b.push({l:'Salvar e enviar para cotação ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
     if(!isNew&&st!=='nova'&&NX[st]){const [l,ns]=NX[st];b.push({l,cls:'pri',fn:async f=>{
       if(ns==='REQ'){const o=await save(f,null,'REQ');if(o)await gerarReq(o);return}
       const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
   }
-  if(!isNew&&st==='requisitada'){const r=reqOf(s.id);if(r)b.push({l:'Ver requisição →',cls:'dark',fn:()=>{closeModal();UI.view='requisicoes';saveUI();render();openReq(r)}})}
+  if(!isNew&&st==='requisitada'){const r=reqOf(s.id);if(r)b.push({l:'Ver requisição de compra →',cls:'dark',fn:()=>{closeModal();UI.view='requisicoes';saveUI();render();openReq(r)}})}
   if(!b.length)b.push({l:'Fechar',cls:'ghost',fn:closeModal});
   const flow=st==='cancelada'?`<div class="tools"><span class="pill p-red">Cancelada</span></div>`:
     `<div class="flow">${SOL_FLOW.map((k,i)=>`<div class="fs ${SOL_FLOW.indexOf(st)>=i?'done':''} ${k===st?'cur':''}"><i>${i+1}</i>${SOL_ST[k].l}</div>`).join('')}</div>`;
   const wa=waHref(s);
-  const tools=isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de orçamento</button>${wa?`<a class="btn sm wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp do fornecedor</a>`:''}${s.emailEm?`<span class="sent" style="margin:0;align-self:center">✓ E-mail p/ compras gerado ${fmtD(String(s.emailEm).slice(0,10))}</span>`:''}</div>`;
+  const tools=isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button>${wa?`<a class="btn sm wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp do fornecedor</a>`:''}${s.emailEm?`<span class="sent" style="margin:0;align-self:center">✓ E-mail p/ compras gerado ${fmtD(String(s.emailEm).slice(0,10))}</span>`:''}</div>`;
   const hist=(s.hist||[]).length?`<div class="hist">Histórico: ${s.hist.map(h=>`${esc((SOL_ST[h.st]||{}).l||h.st)} ${fmtD(String(h.em).slice(0,10))}`).join(' → ')}</div>`:'';
   openModal({
-    title:isNew?'Nova solicitação':esc(join([s.numero,s.item],' — ')),
+    title:isNew?'Nova solicitação de cotação':esc(join([s.numero,s.item],' — ')),
     sub:esc(join([obraNomeCod(s.obra),cron?'a partir do cronograma':''])),
     body:flow+tools+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
   MODAL_CTX={spec:F_SOL,msg:v=>quoteMsg(Object.assign({},s,v,{anexos:MODAL_CTX.anexos})),anexos:(s.anexos||[]).slice()};
@@ -1518,7 +1518,7 @@ async function gerarReq(sol){
     valorTotal:sol.cotValor,pagamento:sol.cotPagamento||'',previsaoEntrega:prev,localEntrega:'Obra '+obraNomeCod(sol.obra),criadoEm:nowISO()};
   await put('requisicoes',r);
   await put('solicitacoes',Object.assign({},sol,{status:'requisitada',hist:(sol.hist||[]).concat([{st:'requisitada',em:nowISO()}])}));
-  closeModal();UI.view='requisicoes';UI.reqStatus='todas';saveUI();render();openReq(r);toast(`Requisição ${r.numero} gerada`);
+  closeModal();UI.view='requisicoes';UI.reqStatus='todas';saveUI();render();openReq(r);toast(`Requisição de compra ${r.numero} gerada`);
 }
 
 /* ---------- requisição ---------- */
@@ -1541,13 +1541,13 @@ function openReq(r){
   if(canWrite)b.push({l:'Salvar',fn:async f=>{
     const o=Object.assign({},byId('requisicoes',r.id)||r,readForm(F_REQ,f));const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}
     await put('requisicoes',o);closeModal();toast('Requisição salva')}});
-  b.push({l:'Salvar e enviar p/ compras ✉',cls:'pri',fn:async f=>{
+  b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{
     let o=Object.assign({},byId('requisicoes',r.id)||r,canWrite?readForm(F_REQ,f):{});
     if(canWrite){const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}await put('requisicoes',o)}
     closeModal();mailReq(o)}});
   MODAL_CTX=null;
   openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
-    body:formHTML(F_REQ,r)+(sol?`<div class="note">Gerada a partir da solicitação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
+    body:formHTML(F_REQ,r)+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
 }
 
 /* ---------- copiar / toast ---------- */
