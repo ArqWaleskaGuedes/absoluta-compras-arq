@@ -1236,6 +1236,7 @@ $('#modal').addEventListener('click',async e=>{
   const cm=e.target.closest('[data-copymsg]');
   if(cm){if(MODAL_CTX)copyText(MODAL_CTX.msg(readForm(MODAL_CTX.spec,$('#mform'))));return}
   if(e.target.closest('[data-mailsend]')){enviarOutlook();return}
+  if(e.target.closest('[data-maileml]')){baixarEml();return}
   if(e.target.closest('[data-mailrich]')){copyRich();return}
   if(e.target.closest('[data-mailopen2]')){openMailto();return}
   const mo=e.target.closest('[data-mailopen]');
@@ -1300,6 +1301,36 @@ async function enviarOutlook(){
     const m=String(e&&(e.errorCode||e.message)||e);
     toast(/user_cancelled|popup_window_error|BrowserAuthError: popup/i.test(m)?'Login cancelado ou pop-up bloqueado — libere pop-ups para o site.':/AADSTS65001|consent/i.test(m)?'Falta o consentimento da permissão Mail.Send no portal da Microsoft.':/AADSTS50011|redirect/i.test(m)?'Endereço de retorno não cadastrado no portal da Microsoft.':'Não foi possível enviar: '+m.slice(0,120));}
 }
+/* ---------- .eml pronto para o Outlook (com anexos) ---------- */
+const b64u=str=>btoa(unescape(encodeURIComponent(str)));
+const wrap76=b=>b.replace(/(.{76})/g,'$1\r\n');
+const encH=t=>/^[\x20-\x7e]*$/.test(t)?t:'=?UTF-8?B?'+b64u(t)+'?=';
+async function anexosB64(list){
+  const out=[];
+  for(const a of list||[]){if(!a.db)continue;
+    try{const m=(await ref(`arquivos/${a.id}/meta`).once('value')).val();if(!m)continue;
+      const ps=(await ref(`arquivos/${a.id}/p`).once('value')).val()||{};
+      out.push({nome:m.nome,tipo:m.tipo,b64:Array.from({length:m.partes},(_,i)=>ps[i]||'').join('')})}catch(e){}}
+  return out;
+}
+async function baixarEml(){
+  const c=MODAL_CTX&&MODAL_CTX.mail;if(!c)return;
+  const to=$('#mto').value.trim(),subject=$('#msub').value,text=$('#mbody').value;
+  toast('Preparando o e-mail…');
+  const anx=await anexosB64(MAIL_ANX);
+  const B1='=_mix_'+uid(),B2='=_alt_'+uid();
+  const L=['X-Unsent: 1',`To: ${to}`,`Subject: ${encH(subject)}`,'MIME-Version: 1.0',`Content-Type: multipart/mixed; boundary="${B1}"`,'',
+    `--${B1}`,`Content-Type: multipart/alternative; boundary="${B2}"`,'',
+    `--${B2}`,'Content-Type: text/plain; charset="utf-8"','Content-Transfer-Encoding: base64','',wrap76(b64u(text)),'',
+    `--${B2}`,'Content-Type: text/html; charset="utf-8"','Content-Transfer-Encoding: base64','',wrap76(b64u('<html><body>'+c.html+'</body></html>')),'',`--${B2}--`,''];
+  anx.forEach(a=>L.push(`--${B1}`,`Content-Type: ${a.tipo}; name="${encH(a.nome)}"`,'Content-Transfer-Encoding: base64',`Content-Disposition: attachment; filename="${encH(a.nome)}"`,'',wrap76(a.b64),''));
+  L.push(`--${B1}--`,'');
+  const blob=new Blob([L.join('\r\n')],{type:'message/rfc822'});
+  const nome=(subject.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)||'email')+'.eml';
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+  c.onOpen&&c.onOpen();
+  toast(`E-mail baixado${anx.length?` com ${anx.length} anexo(s)`:''} — abra o arquivo para ele aparecer pronto no Outlook.`);
+}
 /* modelo de e-mail: blocos -> texto simples e HTML */
 const LN='────────────────────────────────';
 function mailText(d){
@@ -1345,9 +1376,9 @@ function openMail({title,subject,doc,onOpen}){
     <div class="mprev">${html}</div>
     <details class="mdet"><summary>Ver / editar como texto simples (é o que vai pelo “Abrir no e-mail”)</summary><textarea id="mbody" class="mailbody">${esc(body)}</textarea></details>
     ${MAIL_ANX.length?`<div class="note">📎 Os links dos anexos já vão no e-mail. Se preferir anexar o arquivo: ${MAIL_ANX.map(a=>`<a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(' · ')}</div>`:''}
-    <div class="hint" style="margin:12px 0 0">${outlookOn()?`<b>Enviar pelo Outlook</b> manda direto da sua conta${msAccount()?` (${esc(msAccount().username)})`:''}, já formatado${MAIL_ANX.some(a=>a.db)?' e com os PDFs anexados (até 3 MB no total)':''}. Fica salvo nos seus Itens Enviados.`:`<b>Dica:</b> “Copiar e-mail formatado” e colar no Outlook mantém as tabelas e negritos. Para enviar direto, configure o Outlook em Configurações.`}</div>
+    <div class="hint" style="margin:12px 0 0">${outlookOn()?`<b>Enviar pelo Outlook</b> manda direto da sua conta${msAccount()?` (${esc(msAccount().username)})`:''}, já formatado${MAIL_ANX.some(a=>a.db)?' e com os PDFs anexados (até 3 MB no total)':''}. Fica salvo nos seus Itens Enviados.`:`<b>E-mail pronto p/ Outlook</b> baixa um arquivo: dê dois cliques nele e o e-mail abre no Outlook já com destinatário, assunto, formatação${MAIL_ANX.some(a=>a.db)?' e <b>os PDFs anexados</b>':''} — é só clicar em Enviar. (Funciona no Outlook instalado no computador.)`}</div>
    </form>
-   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button>${outlookOn()?`<button type="button" class="btn" data-mailrich>Copiar formatado</button><button type="button" class="btn pri" data-mailsend>✉ Enviar pelo Outlook</button>`:`<button type="button" class="btn" data-mailopen2>✉ Abrir no e-mail</button><button type="button" class="btn pri" data-mailrich>Copiar e-mail formatado</button>`}</div></div>`;
+   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button>${outlookOn()?`<button type="button" class="btn" data-maileml>⬇ E-mail p/ Outlook</button><button type="button" class="btn pri" data-mailsend>✉ Enviar pelo Outlook</button>`:`<button type="button" class="btn" data-mailrich>Copiar formatado</button><button type="button" class="btn pri" data-maileml>⬇ E-mail pronto p/ Outlook${MAIL_ANX.some(a=>a.db)?' (com anexos)':''}</button>`}</div></div>`;
   m.classList.remove('hidden');document.body.classList.add('noscroll');
 }
 async function copyRich(){
