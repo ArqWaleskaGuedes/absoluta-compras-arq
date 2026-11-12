@@ -1557,8 +1557,10 @@ function openSol(s,cron,target){
   };
   const b=[];
   if(canWrite){
-    if(!isNew&&st==='nova')b.push({l:'Excluir',cls:'ghost danger',confirm:'Confirmar exclusão',fn:async()=>{await del('solicitacoes',s.id);closeModal();toast('Solicitação excluída')}});
-    else if(!isNew&&['contato','cotada','aprovada'].includes(st))b.push({l:'Cancelar',cls:'ghost danger',confirm:'Confirmar cancelamento',fn:async f=>{if(await save(f,'cancelada')){closeModal();toast('Solicitação cancelada')}}});
+    if(!isNew){const rq=reqOf(s.id);b.push({l:'Excluir',cls:'ghost danger',confirm:rq?`Excluir também ${rq.numero}?`:'Confirmar exclusão',fn:async()=>{
+      if(rq)await del('requisicoes',rq.id);
+      await del('solicitacoes',s.id);closeModal();toast(rq?`Solicitação ${s.numero} e requisição ${rq.numero} excluídas`:`Solicitação ${s.numero||''} excluída`)}})}
+    if(!isNew&&['contato','cotada','aprovada'].includes(st))b.push({l:'Cancelar',cls:'ghost danger',confirm:'Confirmar cancelamento',fn:async f=>{if(await save(f,'cancelada')){closeModal();toast('Solicitação cancelada')}}});
     b.push({l:isNew?'Salvar rascunho':'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();const fl=faltando(o);toast(fl.length?`${o.numero} salva — falta: ${fl.join(', ')}`:(isNew?`Solicitação ${o.numero} criada`:'Salvo'))}}});
     const NX={nova:['Iniciar contato →','contato'],contato:['Marcar como cotada →','cotada'],cotada:['Aprovar cotação →','aprovada'],aprovada:['Gerar requisição de compra →','REQ'],cancelada:['Reabrir','nova']};
     if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
