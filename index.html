@@ -496,7 +496,7 @@ const COLS=['obras','cronograma','solicitacoes','requisicoes'];
 const USERS=[{id:'waleska',nome:'Waleska'},{id:'barbara',nome:'Barbara'}];
 const userNome=id=>(USERS.find(u=>u.id===id)||{}).nome||'';
 
-const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'sigla',l:'Sigla (numeração)',req:1,ph:'Ex.: VP'},{k:'fase',l:'Fase',t:'select',o:FASES},{k:'responsavel',l:'Arquiteta responsável',t:'select',o:USERS.map(u=>u.id),ol:Object.fromEntries(USERS.map(u=>[u.id,{l:u.nome}]))},
+const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'codigo',l:'Código da obra',ph:'Ex.: RD04'},{k:'sigla',l:'Sigla curta',req:1,ph:'Ex.: VP'},{k:'fase',l:'Fase',t:'select',o:FASES},{k:'responsavel',l:'Arquiteta responsável',t:'select',o:USERS.map(u=>u.id),ol:Object.fromEntries(USERS.map(u=>[u.id,{l:u.nome}]))},
  {s:'Etapas da obra (calculam o cronograma)'},{k:'etAlvenaria',l:'Início da alvenaria',t:'date'},{k:'etAcabamentos',l:'Início dos acabamentos',t:'date'},{k:'etEntrega',l:'Entrega da obra',t:'date'}];
 const F_CRON=[
  {s:'Item'},
@@ -608,6 +608,9 @@ const join=(arr,sep=' · ')=>arr.filter(x=>x!=null&&x!=='').join(sep);
 
 const obraById=id=>S.obras.find(o=>o.id===id);
 const obraNome=id=>(obraById(id)||{}).nome||'';
+const CODIGOS={'vista-park':'RD04',essence:'RD06',zenith:'RD07'};
+const obraCod=id=>{const o=obraById(id)||{};return String(o.codigo||CODIGOS[id]||'').toUpperCase()};
+const obraNomeCod=id=>join([obraCod(id),obraNome(id)],' · ');
 const obraSig=id=>((obraById(id)||{}).sigla||'').toUpperCase();
 const obrasSorted=()=>[...S.obras].sort((a,b)=>((b.responsavel===ME)-(a.responsavel===ME))||(a.ordem??99)-(b.ordem??99)||String(a.nome).localeCompare(b.nome));
 const isMine=id=>{const o=obraById(id);return !!o&&o.responsavel===ME};
@@ -642,7 +645,7 @@ function cronStatus(c){
   return {k:'plan',l:'Planejado'};
 }
 function nextNum(col,prefix,obra){
-  const sig=obraSig(obra)||'OB';
+  const sig=obraCod(obra)||obraSig(obra)||'OB';
   const n=S[col].filter(x=>x.obra===obra).reduce((m,x)=>Math.max(m,parseInt(String(x.numero||'').split('-').pop(),10)||0),0)+1;
   return `${prefix}-${sig}-${String(n).padStart(3,'0')}`;
 }
@@ -815,7 +818,7 @@ function renderGeral(){
   </div>
   <div class="row2">
     <div class="panel"><div class="ph"><h2>Obras</h2><div class="chips"><button class="chip ${UI.scope!=='todas'?'on':''}" data-chip="scope:minhas">Minhas</button><button class="chip ${UI.scope==='todas'?'on':''}" data-chip="scope:todas">Todas</button></div></div>
-      <div class="ocards">${obras.length?obras.map(o=>{const p=prog(o.id);return `<button class="oc" data-obra="${esc(o.id)}">${fotoDiv(o)}<div class="ov"><div class="on">${esc(o.nome)}<span>${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div><span class="chipw">${esc(o.fase||'—')}</span>${UI.scope==='todas'&&o.responsavel?`<span class="resp">${esc(userNome(o.responsavel))}</span>`:''}</div></button>`}).join(''):'<div class="empty" style="grid-column:1/-1">Nenhuma obra atribuída a você.</div>'}</div>
+      <div class="ocards">${obras.length?obras.map(o=>{const p=prog(o.id);return `<button class="oc" data-obra="${esc(o.id)}">${fotoDiv(o)}<div class="ov"><div class="on">${esc(o.nome)}<span>${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div>${obraCod(o.id)?`<span class="chipw" style="margin-right:5px">${esc(obraCod(o.id))}</span>`:''}<span class="chipw">${esc(o.fase||'—')}</span>${UI.scope==='todas'&&o.responsavel?`<span class="resp">${esc(userNome(o.responsavel))}</span>`:''}</div></button>`}).join(''):'<div class="empty" style="grid-column:1/-1">Nenhuma obra atribuída a você.</div>'}</div>
     </div>
     <div class="panel"><div class="ph"><h2>Status das Compras <span class="mut" style="font-weight:300">(Arquitetura)</span></h2></div>
       <div class="donut"><svg viewBox="0 0 190 190">${arcs}<text x="95" y="96" text-anchor="middle" font-size="36" font-family="Jost" fill="#2d2b24">${tot}</text><text x="95" y="120" text-anchor="middle" font-size="15" font-family="Jost" fill="#2d2b24">itens</text></svg>
@@ -826,24 +829,24 @@ function renderGeral(){
     <div class="panel"><div class="ph"><h2>Prazos para pedir</h2><span class="mut" style="font-size:13px">atrasados e próximos 7 dias</span></div>
       ${prazos.length?prazos.map(({c,st,L})=>`<div class="lrow" data-go="${esc(c.obra)}|cronograma|cron|${esc(c.id)}">
         <div class="dt ${st.k}"><small>Pedir</small><b>${fmtD(L)}</b></div>
-        <div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNome(c.obra),c.local,qtdTxt(c)]))}</div></div>
+        <div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNomeCod(c.obra),c.local,qtdTxt(c)]))}</div></div>
         <div class="side2"><span class="pill p-${st.k}">${esc(st.l)}</span></div></div>`).join(''):'<div class="mut" style="padding:20px 4px">Nenhum prazo vencendo. 👌</div>'}
     </div>
     <div class="panel"><div class="ph"><h2>Fila de compras</h2><span class="mut" style="font-size:13px">${fila.length} em andamento</span></div>
       ${fila.length?fila.map(s=>{const st=SOL_ST[s.status];return `<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}">
-        <div class="main"><div class="num">${esc(s.numero||'')} <span class="tag">${esc(obraNome(s.obra))}</span></div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([qtdTxt(s),s.fornecedor]))}</div></div>
+        <div class="main"><div class="num">${esc(s.numero||'')} <span class="tag">${esc(obraNomeCod(s.obra))}</span></div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([qtdTxt(s),s.fornecedor]))}</div></div>
         <div class="side2"><span class="pill p-${st.c}">${st.l}</span>${s.dataNecessaria?`<small>Em obra ${fmtD(s.dataNecessaria)}</small>`:''}</div></div>`}).join(''):'<div class="mut" style="padding:20px 4px">Nenhuma solicitação em andamento.</div>'}
     </div>
   </div>`;
 }
 function renderSearch(){
-  const q=UI.gq.toLowerCase();const hit=(o,ks)=>ks.some(k=>String(o[k]||'').toLowerCase().includes(q))||obraNome(o.obra).toLowerCase().includes(q);
+  const q=UI.gq.toLowerCase();const hit=(o,ks)=>ks.some(k=>String(o[k]||'').toLowerCase().includes(q))||obraNomeCod(o.obra).toLowerCase().includes(q);
   const cr=S.cronograma.filter(c=>hit(c,['item','local','categoria','obs'])),so=S.solicitacoes.filter(s=>hit(s,['item','numero','fornecedor','local','marca','modelo'])),rq=S.requisicoes.filter(r=>hit(r,['item','numero','fornecedor','pedidoNum']));
   const sec=(t,arr,f)=>arr.length?`<div class="panel" style="margin-bottom:16px"><div class="ph"><h2>${t}</h2><span class="mut">${arr.length}</span></div>${arr.slice(0,40).map(f).join('')}</div>`:'';
   $('#main').innerHTML=`<div style="margin-bottom:14px" class="mut">Resultados para “${esc(UI.gq)}” <button class="lnk" data-clearq style="margin-left:8px;text-decoration:underline">limpar</button></div>`+
-   (sec('Cronograma',cr,c=>{const st=cronStatus(c);return `<div class="lrow" data-go="${esc(c.obra)}|cronograma|cron|${esc(c.id)}"><div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNome(c.obra),c.local,qtdTxt(c)]))}</div></div><div class="side2"><span class="pill p-${st.k}">${esc(st.l)}</span></div></div>`})+
-    sec('Solicitações',so,s=>`<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}"><div class="main"><div class="num">${esc(s.numero||'')}</div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([obraNome(s.obra),s.fornecedor]))}</div></div><div class="side2"><span class="pill p-${SOL_ST[s.status].c}">${SOL_ST[s.status].l}</span></div></div>`)+
-    sec('Requisições',rq,r=>`<div class="lrow" data-go="${esc(r.obra)}|requisicoes|req|${esc(r.id)}"><div class="main"><div class="num">${esc(r.numero||'')}</div><div class="t">${esc(r.item)}</div><div class="m">${esc(join([obraNome(r.obra),r.fornecedor]))}</div></div><div class="side2"><span class="pill p-${REQ_ST[r.status].c}">${REQ_ST[r.status].l}</span>${r.valorTotal?`<small>${money(r.valorTotal)}</small>`:''}</div></div>`)
+   (sec('Cronograma',cr,c=>{const st=cronStatus(c);return `<div class="lrow" data-go="${esc(c.obra)}|cronograma|cron|${esc(c.id)}"><div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([obraNomeCod(c.obra),c.local,qtdTxt(c)]))}</div></div><div class="side2"><span class="pill p-${st.k}">${esc(st.l)}</span></div></div>`})+
+    sec('Solicitações',so,s=>`<div class="lrow" data-go="${esc(s.obra)}|solicitacoes|sol|${esc(s.id)}"><div class="main"><div class="num">${esc(s.numero||'')}</div><div class="t">${esc(s.item)}</div><div class="m">${esc(join([obraNomeCod(s.obra),s.fornecedor]))}</div></div><div class="side2"><span class="pill p-${SOL_ST[s.status].c}">${SOL_ST[s.status].l}</span></div></div>`)+
+    sec('Requisições',rq,r=>`<div class="lrow" data-go="${esc(r.obra)}|requisicoes|req|${esc(r.id)}"><div class="main"><div class="num">${esc(r.numero||'')}</div><div class="t">${esc(r.item)}</div><div class="m">${esc(join([obraNomeCod(r.obra),r.fornecedor]))}</div></div><div class="side2"><span class="pill p-${REQ_ST[r.status].c}">${REQ_ST[r.status].l}</span>${r.valorTotal?`<small>${money(r.valorTotal)}</small>`:''}</div></div>`)
     ||'<div class="empty">Nada encontrado.</div>');
 }
 function renderObra(){
@@ -875,7 +878,7 @@ function renderObra(){
       <div class="chips">${ch.map(([k,l])=>`<button class="chip ${UI.reqStatus===k?'on':''}" data-chip="reqStatus:${k}">${l}<em>${cnt(k)}</em></button>`).join('')}</div></div>`;
   }
   $('#main').innerHTML=`
-  <div class="ohero">${fotoDiv(o)}<div class="ov"><div><h1>${esc(o.nome)}</h1><div class="meta">${o.fase?`<span class="chipw">${esc(o.fase)}</span>`:''}${o.responsavel?`<span class="chipw">Resp.: ${esc(userNome(o.responsavel))}</span>`:''}${canWrite?'<button class="chipw" style="border:0;color:#fff;font:inherit;font-size:12.5px;cursor:pointer" data-editobra>Editar obra / foto</button>':''}</div></div>
+  <div class="ohero">${fotoDiv(o)}<div class="ov"><div><h1>${esc(o.nome)}</h1><div class="meta">${obraCod(o.id)?`<span class="chipw" style="background:rgba(255,255,255,.32);font-weight:500">${esc(obraCod(o.id))}</span>`:''}${o.fase?`<span class="chipw">${esc(o.fase)}</span>`:''}${o.responsavel?`<span class="chipw">Resp.: ${esc(userNome(o.responsavel))}</span>`:''}${canWrite?'<button class="chipw" style="border:0;color:#fff;font:inherit;font-size:12.5px;cursor:pointer" data-editobra>Editar obra / foto</button>':''}</div></div>
     <div class="stt"><div><small>No cronograma</small><b>${s.cr.length}</b></div><div><small>Solicitações abertas</small><b>${s.abertas}</b></div><div><small>Requisitado</small><b>${s.total?money(s.total):s.ativas.length}</b></div>${(()=>{let L=0,U=0;CATS.forEach(c=>{const v=verbaOf(o.id,c);if(v.lim){L+=v.lim;U+=v.ped+v.prev}});return L?`<div><small>Saldo de verba</small><b style="${L-U<0?'color:#ffb4a4':''}">${money(L-U)}</b></div>`:''})()}</div></div></div>
   <div class="tabs">
     <button class="tab ${UI.view==='cronograma'?'on':''}" data-view="cronograma">Cronograma <span class="c ${s.late?'al':''}">${al?al+' p/ pedir':s.cr.length}</span></button>
@@ -1257,7 +1260,7 @@ function solMailBlock(s){
 }
 function mailSol(s){
   if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes de enviar: '+faltando(s).join(', '));return}
-  const nome=obraNome(s.obra);
+  const nome=obraNomeCod(s.obra);
   MAIL_ANX=(s.anexos||[]);
   openMail({title:'Enviar solicitação',subject:`[Compras Arq] ${nome} · ${s.numero} · ${s.item}`,
     body:`Olá, equipe de compras!\n\nSegue solicitação de compra de arquitetura — obra ${nome}:\n\n${solMailBlock(s)}\n\nSolicitante: ${s.solicitante||meNome()}\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
@@ -1270,7 +1273,7 @@ function mailBatch(){
   const pend=ok.filter(s=>!s.emailEm);const list=pend.length?pend:ok;
   if(!list.length){toast('Nenhuma solicitação completa para enviar — confira o checklist.');return}
   if(inc)setTimeout(()=>toast(`${inc} incompleta${inc>1?'s':''} ficou de fora do e-mail.`),300);
-  const nome=obraNome(UI.obra);
+  const nome=obraNomeCod(UI.obra);
   MAIL_ANX=list.flatMap(s=>s.anexos||[]);
   openMail({title:`Enviar ${list.length} solicitaç${list.length>1?'ões':'ão'}`,subject:`[Compras Arq] ${nome} · ${list.length} nova${list.length>1?'s':''} solicitaç${list.length>1?'ões':'ão'}`,
     body:`Olá, equipe de compras!\n\nSeguem as novas solicitações de compra de arquitetura — obra ${nome}:\n\n${list.map((s,i)=>`${i+1}) ${solMailBlock(s)}`).join('\n\n')}\n\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
@@ -1278,7 +1281,7 @@ function mailBatch(){
 }
 function mailReq(r){
   const sol=r.solId&&byId('solicitacoes',r.solId);MAIL_ANX=(sol&&sol.anexos)||[];
-  openMail({title:'Enviar requisição',subject:`[Compras Arq] ${obraNome(r.obra)} · ${r.numero} · ${r.item} · ${r.fornecedor||''}`,
+  openMail({title:'Enviar requisição',subject:`[Compras Arq] ${obraNomeCod(r.obra)} · ${r.numero} · ${r.item} · ${r.fornecedor||''}`,
     body:`Olá, equipe de compras!\n\nSegue requisição para emissão do pedido:\n\n${reqText(r)}\n\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
     onOpen:()=>{if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
@@ -1300,6 +1303,7 @@ function openCfg(){
 
 /* ---------- obra ---------- */
 function openObra(o){
+  if(o&&!o.codigo&&CODIGOS[o.id])o=Object.assign({},o,{codigo:CODIGOS[o.id]});
   const isNew=!o;o=o||{id:uid(),responsavel:ME,fase:'Fundação',ordem:S.obras.reduce((m,x)=>Math.max(m,x.ordem||0),0)+1};
   const has=!isNew&&(S.cronograma.some(x=>x.obra===o.id)||S.solicitacoes.some(x=>x.obra===o.id)||S.requisicoes.some(x=>x.obra===o.id));
   const b=[];
@@ -1334,7 +1338,7 @@ function openCron(c,pre){
   MODAL_CTX=null;
   openModal({
     title:isNew?'Novo item do cronograma':esc(c.item),
-    sub:esc(join([obraNome(c.obra),L?'Pedir até '+fmtDY(L):''])),
+    sub:esc(join([obraNomeCod(c.obra),L?'Pedir até '+fmtDY(L):''])),
     body:formHTML(F_CRON,c)+(sol?`<div class="note">Este item já tem a solicitação <b>${esc(sol.numero)}</b> (${SOL_ST[sol.status].l}). <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),
     buttons:b});
 }
@@ -1344,7 +1348,7 @@ function specLines(s){
   return [s.modelo||s.marca?'Modelo/referência: '+join([s.modelo,s.marca],' · '):'',s.acabamento?'Cor e características: '+s.acabamento:'',s.dimensoes?'Medidas: '+s.dimensoes:'',s.referencia?'Projeto: '+s.referencia:'',(s.anexos||[]).length?'Anexos: '+s.anexos.map(a=>a.nome).join(', '):'',s.especificacao?'Outras informações: '+s.especificacao:''].filter(Boolean);
 }
 function quoteMsg(s){
-  const L=[`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de um orçamento para a obra ${obraNome(s.obra)}:`,'',`• Produto: ${s.item||''}`];
+  const L=[`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de um orçamento para a obra ${obraNomeCod(s.obra)}:`,'',`• Produto: ${s.item||''}`];
   if(qtdTxt(s))L.push(`• Quantidade: ${qtdTxt(s)}`);
   if(s.modelo||s.marca)L.push(`• Modelo / referência: ${join([s.modelo,s.marca],' · ')}`);
   if(s.acabamento)L.push(`• Cor e características: ${s.acabamento}`);
@@ -1402,7 +1406,7 @@ function openSol(s,cron,target){
   const hist=(s.hist||[]).length?`<div class="hist">Histórico: ${s.hist.map(h=>`${esc((SOL_ST[h.st]||{}).l||h.st)} ${fmtD(String(h.em).slice(0,10))}`).join(' → ')}</div>`:'';
   openModal({
     title:isNew?'Nova solicitação':esc(join([s.numero,s.item],' — ')),
-    sub:esc(join([obraNome(s.obra),cron?'a partir do cronograma':''])),
+    sub:esc(join([obraNomeCod(s.obra),cron?'a partir do cronograma':''])),
     body:flow+tools+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
   MODAL_CTX={spec:F_SOL,msg:v=>quoteMsg(Object.assign({},s,v,{anexos:MODAL_CTX.anexos})),anexos:(s.anexos||[]).slice()};
   const upd=()=>{const v=Object.assign({},s,readForm(F_SOL,$('#mform')),{anexos:MODAL_CTX.anexos});const vb=$('#vbw');if(vb)vb.innerHTML=verbaBox(s.obra,v.categoria,v.cotValor,s.id);$('#ckl').innerHTML=`<span class="ckt">Checklist da cotação</span>`+checkOf(v).map(c=>`<span class="ck ${c.ok?'ok':c.opc?'opc':'no'}">${c.ok?'✓':c.opc?'○':'!'} ${c.l}</span>`).join('')};
@@ -1423,7 +1427,7 @@ async function gerarReq(sol){
   const r={id:uid(),obra:sol.obra,solId:sol.id,solNumero:sol.numero,numero:nextNum('requisicoes','REQ',sol.obra),status:'ativa',
     item:sol.item,especificacao:specLines(sol).join('\n'),qtd:sol.qtd,un:sol.un,categoria:sol.categoria,local:sol.local,
     fornecedor:sol.fornecedor||'',contato:sol.contato||'',telefone:sol.telefone||'',email:sol.email||'',
-    valorTotal:sol.cotValor,pagamento:sol.cotPagamento||'',previsaoEntrega:prev,localEntrega:'Obra '+obraNome(sol.obra),criadoEm:nowISO()};
+    valorTotal:sol.cotValor,pagamento:sol.cotPagamento||'',previsaoEntrega:prev,localEntrega:'Obra '+obraNomeCod(sol.obra),criadoEm:nowISO()};
   await put('requisicoes',r);
   await put('solicitacoes',Object.assign({},sol,{status:'requisitada',hist:(sol.hist||[]).concat([{st:'requisitada',em:nowISO()}])}));
   closeModal();UI.view='requisicoes';UI.reqStatus='todas';saveUI();render();openReq(r);toast(`Requisição ${r.numero} gerada`);
@@ -1431,7 +1435,7 @@ async function gerarReq(sol){
 
 /* ---------- requisição ---------- */
 function reqText(r){
-  return [`REQUISIÇÃO DE COMPRA — ${r.numero}`,`Absoluta Construtora · Arquitetura`,`Obra: ${obraNome(r.obra)}`,`Data: ${fmtDY(String(r.criadoEm||'').slice(0,10))}`,
+  return [`REQUISIÇÃO DE COMPRA — ${r.numero}`,`Absoluta Construtora · Arquitetura`,`Obra: ${obraNomeCod(r.obra)}`,`Data: ${fmtDY(String(r.criadoEm||'').slice(0,10))}`,
     r.solNumero?`Ref. solicitação: ${r.solNumero}`:'','',
     `ITEM: ${r.item||''}`,qtdTxt(r)?`Quantidade: ${qtdTxt(r)}`:'',r.local?`Local de aplicação: ${r.local}`:'',r.especificacao?`Especificação:\n${r.especificacao}`:'','',
     `FORNECEDOR: ${r.fornecedor||''}`,r.cnpj?`CNPJ: ${r.cnpj}`:'',join([r.contato,r.telefone,r.email])?`Contato: ${join([r.contato,r.telefone,r.email])}`:'','',
@@ -1454,7 +1458,7 @@ function openReq(r){
     if(canWrite){const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}await put('requisicoes',o)}
     closeModal();mailReq(o)}});
   MODAL_CTX=null;
-  openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNome(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
+  openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
     body:formHTML(F_REQ,r)+(sol?`<div class="note">Gerada a partir da solicitação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
 }
 
