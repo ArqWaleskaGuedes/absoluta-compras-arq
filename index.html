@@ -263,6 +263,10 @@ input.cell[type=date]{font-size:13.5px}
 .ax{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fffdf9;border:1px solid var(--line);border-radius:9px;padding:4px 4px 4px 12px;font-size:14px}
 .ax a{text-decoration:none;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inc{font-size:12px;color:var(--red);margin-top:6px}
+.lform{max-width:440px;margin:26px auto 0}
+.lcard.sel{padding:20px 14px}
+.lcard.sel.on{border-color:var(--ol);box-shadow:0 0 0 2px var(--ol)}
+.lerr{color:var(--red);font-size:14px;margin-top:10px;min-height:18px}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -505,7 +509,8 @@ const FB_CONFIG={apiKey:"AIzaSyANkTPrGUzU-Fx0jQLV6B4bW6Q5tWogJXw",authDomain:"vi
 const ROOT='comprasArq';
 const SEED_OBRAS=[{id:'vista-park',nome:'Vista Park Residence',sigla:'VP',fase:'Finalização',ordem:1,responsavel:'waleska'},{id:'essence',nome:'Essence Residence',sigla:'ES',fase:'Acabamentos',ordem:2,responsavel:'barbara'},{id:'zenith',nome:'Zenith Residence',sigla:'ZN',fase:'Fundação',ordem:3,responsavel:'waleska'},{id:'dom',nome:'Dom Residence',sigla:'DM',fase:'Fundação',ordem:4,responsavel:'barbara'}];
 let wantOwn=false;
-let AUTH='loading',FBU=null,PERFIS={},subs=false;
+let AUTH='loading',FBU=null,subs=false,LMODE='entrar',LUSER='';
+const emailOf=id=>`${id}@compras-arq-absoluta.app`;
 const ref=p=>firebase.database().ref(ROOT+'/'+p);
 function setConn(kind,txt){const c=$('#conn');c.className='conn '+kind;c.querySelector('span').textContent=txt}
 function setBanner(t){$('#banner').innerHTML=t?`<div>${esc(t)}</div>`:''}
@@ -513,16 +518,16 @@ function init(){
   render();
   try{firebase.initializeApp(FB_CONFIG)}catch(e){}
   firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
-  firebase.auth().getRedirectResult().catch(e=>{if(e&&e.code)toast('Login: '+e.code)});
   firebase.database().ref('.info/connected').on('value',s=>setConn(s.val()?'ok':'local',s.val()?'Sincronizado':'Sem conexão'));
   firebase.auth().onAuthStateChanged(async u=>{
     FBU=u;
     if(!u){AUTH='out';ME=null;mode='ready';render();return}
     mode='ready';
-    ref('perfis').on('value',s=>{PERFIS=s.val()||{};const mine=Object.keys(PERFIS).find(k=>PERFIS[k]&&PERFIS[k].uid===u.uid);
-      const before=ME;ME=mine||null;AUTH=ME?'in':'claim';
-      if(ME&&!before){const o=obrasSorted().find(o=>o.responsavel===ME);if(UI.obra==='geral'&&o&&!lsGet('ca_ui2'))UI.obra=o.id}
-      render()},e=>{setBanner('Sem permissão para ler os dados ('+e.code+'). Confira as regras do Firebase.');AUTH='claim';render()});
+    const who=USERS.find(x=>emailOf(x.id)===String(u.email||'').toLowerCase());
+    ME=who?who.id:null;AUTH=ME?'in':'denied';
+    if(!ME){render();return}
+    if(wantOwn&&S.obras.length){const o=obrasSorted().find(o=>o.responsavel===ME);if(o){UI.obra=o.id;saveUI()}wantOwn=false}
+    render();
     if(!subs){subs=true;
       const t=setTimeout(()=>setBanner('Os dados ainda não chegaram — confira sua conexão.'),10000);
       COLS.forEach(c=>ref(c).on('value',snap=>{clearTimeout(t);setBanner('');
@@ -537,18 +542,22 @@ function init(){
 }
 let seeding=false;
 async function seedObras(){if(seeding)return;seeding=true;const snap=await ref('obras').once('value');if(snap.exists())return;for(const o of SEED_OBRAS){const x=Object.assign({},o);delete x.id;await ref('obras/'+o.id).set(x)}}
-async function login(){
-  const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
-  try{await firebase.auth().signInWithPopup(p)}
-  catch(e){if(e&&/popup|operation-not-supported/.test(e.code||''))await firebase.auth().signInWithRedirect(p);else toast('Não foi possível entrar ('+(e&&e.code||'erro')+')')}
-}
-async function claim(pid){
-  if(!FBU)return;
+const AUTH_ERR={'auth/invalid-credential':'Usuária ou senha incorretas. Se é seu primeiro acesso, use “Criar minha senha”.','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Essa usuária ainda não tem senha — use “Criar minha senha”.','auth/email-already-in-use':'Essa usuária já tem senha. Use “Entrar”.','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.','auth/operation-not-allowed':'O login por e-mail/senha está desativado no Firebase.','auth/network-request-failed':'Sem conexão com a internet.','auth/requires-recent-login':'Por segurança, saia e entre de novo antes de trocar a senha.'};
+const authMsg=e=>AUTH_ERR[e&&e.code]||('Não foi possível entrar ('+(e&&e.code||'erro')+')');
+async function doLogin(f){
+  const id=f.querySelector('[name=luser]').value,pw=f.querySelector('[name=lpass]').value;LUSER=id;
+  const out=$('#lerr');out.textContent='';
+  if(!id){out.textContent='Escolha quem está entrando.';return}
+  if(!pw){out.textContent='Digite a senha.';return}
+  const btn=f.querySelector('button[type=submit]');btn.disabled=true;
   try{
-    const r=await ref('perfis/'+pid).transaction(cur=>cur&&cur.uid?undefined:{uid:FBU.uid,email:FBU.email||'',em:nowISO()});
-    if(!r.committed){toast('Esse perfil já está vinculado a outra conta Google.');return}
-    wantOwn=true;UI.scope='minhas';saveUI();
-  }catch(e){toast('Não foi possível vincular ('+(e&&e.code||'erro')+')')}
+    if(LMODE==='criar'){
+      const pw2=f.querySelector('[name=lpass2]').value;
+      if(pw!==pw2){out.textContent='As senhas não conferem.';btn.disabled=false;return}
+      await firebase.auth().createUserWithEmailAndPassword(emailOf(id),pw);
+    }else await firebase.auth().signInWithEmailAndPassword(emailOf(id),pw);
+    LMODE='entrar';wantOwn=true;UI.scope='minhas';saveUI();
+  }catch(e){out.textContent=authMsg(e);btn.disabled=false}
 }
 const clean=o=>JSON.parse(JSON.stringify(o,(k,v)=>v===undefined?null:v));
 async function put(col,obj){
@@ -576,11 +585,22 @@ function render(){
   const m=$('#main');
   renderUser();
   if(mode==='loading'){m.innerHTML='<div class="loading">Carregando…</div>';return}
-  if(AUTH==='out'){m.innerHTML=`<div class="login"><h1>Arquitetura | Compras</h1><div class="mut" style="margin-top:8px">Acesso restrito às arquitetas da Absoluta.</div><button class="btn pri" style="margin-top:28px;padding:14px 26px;font-size:16px" data-glogin>Entrar com Google</button></div>`;return}
-  if(AUTH==='claim'||!ME){const livres=USERS.filter(u=>!(PERFIS[u.id]&&PERFIS[u.id].uid));
-    m.innerHTML=livres.length?`<div class="login"><h1>Bem-vinda!</h1><div style="font-size:18px;margin-top:6px">Quem é você?</div><div class="mut" style="margin-top:8px">Escolha uma vez — o perfil fica vinculado à sua conta Google (${esc(FBU&&FBU.email||'')}).</div>
-    <div class="lgrid">${livres.map(u=>{const ob=obrasSorted().filter(o=>o.responsavel===u.id).map(o=>o.nome);return `<button class="lcard" data-login="${u.id}"><span class="av">${esc(u.nome[0])}</span><b>${esc(u.nome)}</b><small>${esc(ob.join(' · ')||'Arquitetura')}</small></button>`}).join('')}</div><button class="lnk" style="margin-top:22px" data-logout>Sair</button></div>`
-    :`<div class="login"><h1>Acesso não autorizado</h1><div class="mut" style="margin-top:8px">A conta ${esc(FBU&&FBU.email||'')} não está vinculada a nenhuma arquiteta.</div><button class="btn" style="margin-top:22px" data-logout>Sair e usar outra conta</button></div>`;return}
+  if(AUTH==='out'){const cr=LMODE==='criar';
+    m.innerHTML=`<div class="login"><h1>Arquitetura | Compras</h1><div class="mut" style="margin-top:8px">${cr?'Primeiro acesso: crie sua senha':'Acesso restrito às arquitetas da Absoluta'}</div>
+    <form id="lform" class="lform" autocomplete="on">
+      <div class="lgrid">${USERS.map(u=>`<label class="lcard sel${LUSER===u.id?' on':''}"><input type="radio" name="luser" value="${u.id}" ${LUSER===u.id?'checked':''} hidden><span class="av">${esc(u.nome[0])}</span><b>${esc(u.nome)}</b></label>`).join('')}</div>
+      <input type="hidden" name="username" value="${esc(LUSER)}" autocomplete="username">
+      <label class="fld" style="margin-top:20px;text-align:left"><span>${cr?'Crie uma senha (mín. 6 caracteres)':'Senha'}</span><input type="password" name="lpass" autocomplete="${cr?'new-password':'current-password'}"></label>
+      ${cr?'<label class="fld" style="margin-top:12px;text-align:left"><span>Repita a senha</span><input type="password" name="lpass2" autocomplete="new-password"></label>':''}
+      <div id="lerr" class="lerr"></div>
+      <button type="submit" class="btn pri" style="margin-top:16px;width:100%;justify-content:center;padding:13px">${cr?'Criar senha e entrar':'Entrar'}</button>
+      <button type="button" class="lnk" style="margin-top:16px" data-lmode>${cr?'Já tenho senha — entrar':'Primeiro acesso? Criar minha senha'}</button>
+    </form></div>`;
+    const f=$('#lform');
+    f.querySelectorAll('[name=luser]').forEach(r=>r.onchange=()=>{LUSER=r.value;f.querySelector('[name=username]').value=LUSER;f.querySelectorAll('.lcard').forEach(c=>c.classList.toggle('on',c.contains(r)));f.querySelector('[name=lpass]').focus()});
+    f.onsubmit=e=>{e.preventDefault();doLogin(f)};
+    return}
+  if(AUTH==='denied'||!ME){m.innerHTML=`<div class="login"><h1>Acesso não autorizado</h1><div class="mut" style="margin-top:8px">Esta conta não pertence ao sistema de compras.</div><button class="btn" style="margin-top:22px" data-logout>Sair</button></div>`;return}
   if(!S.obras.length){
     m.innerHTML=`<div class="empty"><b>Nenhuma obra cadastrada</b>Cadastre as obras para começar.${canWrite?'<br><button class="btn pri" data-newobra>+ Cadastrar obra</button>':''}</div>`;return;
   }
@@ -965,8 +985,11 @@ function openCfg(){
   MODAL_CTX=null;
   openModal({title:'Configurações',sub:'O e-mail vale para as duas arquitetas',
     body:`<div class="grid"><label class="fld w2"><span>E-mail do setor de compras</span><input name="emailCompras" type="email" value="${esc(CFG.emailCompras||EMAIL_PADRAO)}"${canWrite?'':' disabled'}><small>Para mais de um, separe por vírgula</small></label>
-      <div class="fld w2"><span>Conectada como</span><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(meNome())}</b><button type="button" class="btn sm" data-logout>Sair</button></div></div></div>`,
+      <div class="fld w2"><span>Conectada como</span><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(meNome())}</b><button type="button" class="btn sm" data-logout>Sair</button></div></div>
+      <label class="fld w2"><span>Trocar minha senha</span><input name="novaSenha" type="password" autocomplete="new-password" placeholder="Deixe em branco para manter"></label></div>`,
     buttons:[{l:'Fechar',cls:'ghost',fn:closeModal},{l:'Salvar',cls:'pri',fn:async f=>{
+      const ns=f.querySelector('[name=novaSenha]').value;
+      if(ns){try{await FBU.updatePassword(ns);toast('Senha alterada')}catch(e){toast(authMsg(e));return}}
       const em=f.querySelector('[name=emailCompras]').value.trim();
       if(canWrite&&em!==CFG.emailCompras)await saveCfg({emailCompras:em});
       closeModal();toast('Configurações salvas')}}]});
@@ -1148,9 +1171,7 @@ async function copyText(text){
 /* ---------- eventos ---------- */
 document.addEventListener('click',e=>{
   if(e.target.closest('#modal')||e.target.closest('.copybox'))return;
-  const lg=e.target.closest('[data-login]');
-  if(lg){claim(lg.dataset.login);return}
-  if(e.target.closest('[data-glogin]')){login();return}
+    if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
   const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd]');
