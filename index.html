@@ -425,6 +425,8 @@ input.cell[type=date]{font-size:13.5px}
 .gctl,.sctl{display:inline-flex;gap:2px}
 .gctl .ib,.sctl .ib{width:28px;height:28px;font-size:14px}
 .sctl{opacity:.35;transition:.15s}.pi:hover .sctl{opacity:1}
+.vper{align-items:center}
+.vper span{font-size:12.5px;color:var(--mut);padding:0 6px 0 8px}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -605,12 +607,12 @@ const fotoDiv=o=>fotoOf(o)?`<div class="ph0" style="background-image:url('${Stri
 const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[]};
 let CFG={emailCompras:EMAIL_PADRAO};
 let db=null, mode='loading', canWrite=true, pendingRender=false;
-const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'prio',grp:'local',area:'terreo'};
+const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'prio',grp:'local',area:'terreo',verPor:'item'};
 let ME=null;
 const meNome=()=>userNome(ME);
 try{Object.assign(UI,JSON.parse(localStorage.getItem('ca_ui2')||'{}'));UI.q=''}catch(e){}
 if(UI.reqStatus!=='todas'&&!REQ_ST[UI.reqStatus])UI.reqStatus='todas';
-const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({area:UI.area,cview:UI.cview,obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
+const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({verPor:UI.verPor,area:UI.area,cview:UI.cview,obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 
@@ -909,6 +911,7 @@ function renderObra(){
       <div class="atabs">${AREAS.map(([k,l])=>{const it=crO.filter(c=>areaOf(c)===k),lt=it.filter(c=>cronStatus(c).k==='late').length;return `<button class="atab ${UI.area===k?'on':''}" data-area="${k}">${l}<span class="c">${it.length}</span>${lt?`<span class="c al">${lt} atras.</span>`:''}</button>`}).join('')}</div>
       ${semEtapas&&canWrite?`<div class="etb">📅 Informe as <b>etapas da obra</b> (alvenaria, acabamentos e entrega) para o sistema calcular quando pedir cada item e montar a linha do tempo. <button class="btn sm pri" data-editobra>Informar etapas</button></div>`:''}
       <div class="toolbar"><input type="search" id="q" placeholder="Buscar nesta área…" value="${esc(UI.q)}">
+      <div class="vsw vper"><span>Ver por</span>${[['item','Item'],['ambiente','Ambiente'],['categoria','Categoria']].map(([k,l])=>`<button class="${UI.verPor===k?'on':''}" data-verpor="${k}">${l}</button>`).join('')}</div>
       <div class="vsw"><button class="${UI.cview==='prio'?'on':''}" data-cview="prio">${ico('list')} Prioridades</button><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
       ${prioFlow(crO.filter(c=>areaOf(c)===UI.area))}`;
     if(UI.cview==='prio')tb+=`<div class="hint">Ordem de compra sugerida: primeiro o que precisa ser pedido antes (data limite e prazo do fornecedor). Itens marcados como <b>Urgente</b> ou <b>Alta</b> sobem para o topo. ≈ = data estimada pela etapa da obra.</div>`;
@@ -1020,13 +1023,15 @@ const grpOf=c=>(c.grupo&&String(c.grupo).trim())||grpAuto(c);
 const grpTipo=c=>c.grupo?tipoOf(c):(tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?'geral':'ambiente');
 let CLOSED=new Set();try{CLOSED=new Set(JSON.parse(localStorage.getItem('ca_closed2')||'[]'))}catch(e){}
 const saveClosed=()=>lsSet('ca_closed2',JSON.stringify([...CLOSED]));
-const isOpen=g=>!CLOSED.has(UI.obra+'::'+UI.area+'::'+g);
+const isOpen=g=>!CLOSED.has(UI.obra+'::'+UI.area+'::'+UI.verPor+'::'+g);
 function cronFiltered(){const id=UI.obra;return S.cronograma.filter(c=>c.obra===id&&areaOf(c)===UI.area&&matchQ(c,['item','local','categoria','obs'])&&(!UI.stage||stageOf(c)===UI.stage))}
+const keyOf=c=>UI.verPor==='ambiente'?(c.local&&!/geral/i.test(c.local)?c.local:(c.local?c.local:'Sem ambiente')):UI.verPor==='categoria'?(c.categoria||'Sem categoria'):grpOf(c);
+const manual=()=>UI.verPor!=='item'?false:true;
 const cmpSub=(a,b)=>((a.ordem??1e9)-(b.ordem??1e9))||cmpItems(a,b);
 function ordemGrupos(){const o=obraById(UI.obra)||{};return ((o.ordemGrupos||{})[UI.area])||[]}
-function grouped(arr){const G={};arr.forEach(c=>{const g=grpOf(c);(G[g]=G[g]||[]).push(c)});Object.values(G).forEach(l=>l.sort(cmpSub));
-  const man=ordemGrupos(),ix=g=>{const i=man.indexOf(g);return i<0?1e9:i};
-  return Object.keys(G).sort((a,b)=>(ix(a)-ix(b))||cmpItems([...G[a]].sort(cmpItems)[0],[...G[b]].sort(cmpItems)[0])).map(g=>({g,items:G[g],tipo:grpTipo(G[g][0])}))}
+function grouped(arr){const G={};arr.forEach(c=>{const g=keyOf(c);(G[g]=G[g]||[]).push(c)});Object.values(G).forEach(l=>l.sort(manual()?cmpSub:cmpItems));
+  const man=manual()?ordemGrupos():[],ix=g=>{const i=man.indexOf(g);return i<0?1e9:i};
+  return Object.keys(G).sort((a,b)=>(ix(a)-ix(b))||cmpItems([...G[a]].sort(cmpItems)[0],[...G[b]].sort(cmpItems)[0])).map(g=>({g,items:G[g],tipo:UI.verPor==='ambiente'?'ambiente':UI.verPor==='categoria'?'geral':grpTipo(G[g][0])}))}
 async function moveGrupo(g,dir){
   const all=grouped(S.cronograma.filter(c=>c.obra===UI.obra&&areaOf(c)===UI.area)).map(x=>x.g);
   const i=all.indexOf(g),j=i+dir;if(i<0||j<0||j>=all.length)return;
@@ -1122,18 +1127,18 @@ function cronPrio(){
   const arr=cronFiltered();if(!arr.length)return emptyArea();
   return `<div class="plist">${grouped(arr).map(({g,items,tipo},gi)=>{const inf=grpInfo(items),op=isOpen(g);
     return `<div class="pg ${inf.late?'late':''}" id="g-${esc(gid(g))}"><div class="pgh" data-tog="${esc(g)}"><span class="rk">${gi+1}</span>
-      <div class="pgt"><b>${esc(g)}</b><small>${tipo==='geral'?'Compra geral':'Ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
+      <div class="pgt"><b>${esc(g)}</b><small>${UI.verPor==='item'?(tipo==='geral'?'Compra geral':'Ambiente'):UI.verPor==='ambiente'?'Ambiente':'Categoria'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
       <div class="pgd">${inf.first?`<small>pedir a partir de</small><b>${fmtD(inf.first)}</b>`:'<small>sem data</small>'}</div>
       <div class="pgb"><i style="width:${Math.round(inf.done/inf.n*100)}%"></i></div>
-      ${canWrite?`<span class="gctl"><button class="ib" data-gup="${esc(g)}" title="Subir">↑</button><button class="ib" data-gdown="${esc(g)}" title="Descer">↓</button><button class="ib" data-gedit="${esc(g)}" title="Editar item">✎</button></span><button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
+      ${canWrite&&manual()?`<span class="gctl"><button class="ib" data-gup="${esc(g)}" title="Subir">↑</button><button class="ib" data-gdown="${esc(g)}" title="Descer">↓</button><button class="ib" data-gedit="${esc(g)}" title="Editar item">✎</button></span><button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
       ${op?`<div class="pgl">${items.map((c,i)=>{const sol=solOf(c.id);return `<div class="pi" data-cron="${esc(c.id)}"><span class="rk2">${gi+1}.${i+1}</span>
         <div class="main"><div class="t">${esc(c.item)}${c.prio&&c.prio!=='Normal'?` <span class="pill p-${PRIO[c.prio]}" style="font-size:11px;padding:1px 8px">${c.prio}</span>`:''}${/^Sugestão/.test(c.obs||'')?' <span class="sug">sugestão</span>':''}</div>
-        <div class="m">${esc(join([tipo==='geral'?c.local:c.categoria,qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div>
+        <div class="m">${esc(join([UI.verPor==='ambiente'?c.categoria:UI.verPor==='categoria'?c.local:(tipo==='geral'?c.local:c.categoria),qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div>
         <div class="pdt"><small>pedir até</small><b class="${cronStatus(c).k}">${lTxt(c)}</b></div><div class="pdt"><small>em obra</small><b>${dTxt(c)}</b></div>
         <div class="pst">${stPill(c)}</div>
         <div class="pac">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div>
-        ${canWrite?`<span class="sctl"><button class="ib" data-sup="${esc(c.id)}" title="Subir">↑</button><button class="ib" data-sdown="${esc(c.id)}" title="Descer">↓</button></span>`:''}</div>`}).join('')}</div>`:''}</div>`}).join('')}</div>
-    ${canWrite?'<button class="btn" style="margin-top:12px" data-novogrupo>+ Novo item</button>':''}`;
+        ${canWrite&&manual()?`<span class="sctl"><button class="ib" data-sup="${esc(c.id)}" title="Subir">↑</button><button class="ib" data-sdown="${esc(c.id)}" title="Descer">↓</button></span>`:''}</div>`}).join('')}</div>`:''}</div>`}).join('')}</div>
+    ${canWrite&&manual()?'<button class="btn" style="margin-top:12px" data-novogrupo>+ Novo item</button>':''}`;
 }
 function cronTimeline(){
   const arr=cronFiltered();if(!arr.length)return emptyArea();
@@ -1764,7 +1769,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo],[data-verpor]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1780,10 +1785,11 @@ document.addEventListener('click',e=>{
   if(d.sup!=null){e.stopPropagation();moveSub(d.sup,-1);return}
   if(d.sdown!=null){e.stopPropagation();moveSub(d.sdown,1);return}
   if('novogrupo' in d){openNovoGrupo();return}
-  if(d.jump!=null){const g=d.jump;CLOSED.delete(UI.obra+'::'+UI.area+'::'+g);saveClosed();UI.stage='';UI.q='';if(UI.cview!=='prio'){UI.cview='prio';saveUI();render()}else renderItems();setTimeout(()=>{const el=document.getElementById('g-'+gid(g));if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}},60);return}
+  if(d.jump!=null){const g=d.jump;CLOSED.delete(UI.obra+'::'+UI.area+'::'+UI.verPor+'::'+g);saveClosed();UI.stage='';UI.q='';if(UI.cview!=='prio'){UI.cview='prio';saveUI();render()}else renderItems();setTimeout(()=>{const el=document.getElementById('g-'+gid(g));if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}},60);return}
+  if(d.verpor){UI.verPor=d.verpor;saveUI();render();return}
   if(d.area){UI.area=d.area;UI.q='';UI.stage='';saveUI();render();return}
-  if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,Object.assign({grupo:g},tp==='geral'?{categoria:CATS.includes(g)?g:'',tipo:'geral'}:{local:g,tipo:'ambiente'}));return}
-  if(d.tog!=null){const k=UI.obra+'::'+UI.area+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
+  if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,UI.verPor==='ambiente'?{local:g}:UI.verPor==='categoria'?{categoria:g}:Object.assign({grupo:g},tp==='geral'?{categoria:CATS.includes(g)?g:'',tipo:'geral'}:{local:g,tipo:'ambiente'}));return}
+  if(d.tog!=null){const k=UI.obra+'::'+UI.area+'::'+UI.verPor+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
   if(d.pack){t.disabled=true;importPack(d.pack);return}
   if('allcats' in d){UI.allcats=!UI.allcats;render();return}
   if(d.stage){UI.stage=UI.stage===d.stage?'':d.stage;render();return}
