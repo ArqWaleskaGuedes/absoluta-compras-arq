@@ -354,6 +354,47 @@ input.cell[type=date]{font-size:13.5px}
 .usec:first-of-type{margin-top:0}
 .ugh{text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);font-weight:500;padding:12px 4px 8px}
 .ugl{padding-left:16px}
+.atabs{display:flex;gap:6px;margin:0 0 14px;overflow-x:auto;padding-bottom:2px;border-bottom:1px solid var(--line2)}
+.atab{border:0;background:transparent;font:400 16px Jost,sans-serif;color:#6b6557;padding:10px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-1px}
+.atab:hover{color:var(--ink)}
+.atab.on{color:var(--ink);font-weight:500;border-bottom-color:#6b6a4c}
+.atab .c{font-size:11.5px;background:#ece6db;padding:1px 8px;border-radius:999px;font-weight:400}
+.atab .c.al{background:var(--red2);color:var(--red)}
+.etb{background:#f3ead8;border:1px solid #e3d3b0;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.plist{display:flex;flex-direction:column;gap:10px}
+.pg{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.pg.late{border-color:#e7c3b9}
+.pgh{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;user-select:none;flex-wrap:wrap}
+.pgh:hover{background:#faf6ef}
+.rk{flex:none;width:34px;height:34px;border-radius:10px;background:#6b6a4c;color:#fff;display:grid;place-items:center;font-weight:500;font-size:15px}
+.rk.sm{color:#fff !important;display:inline-grid;width:22px;height:22px;border-radius:6px;font-size:12px;margin-right:8px;vertical-align:middle}
+.pg.late .rk{background:#b5654f}
+.pgt{flex:1;min-width:180px}
+.pgt b{font-weight:500;font-size:16.5px;display:block}
+.pgt small{font-size:13px;color:var(--mut)}
+.pgt small .r,.gi .r{color:var(--red);font-weight:500}
+.pgd{text-align:right;min-width:96px}
+.pgd small{display:block;font-size:11.5px;color:var(--mut)}
+.pgd b{font-weight:500;font-size:16px}
+.pgb{width:110px;height:6px;background:#ece6db;border-radius:6px;overflow:hidden}
+.pgb i{display:block;height:100%;background:#6b6a4c}
+.pgl{border-top:1px solid var(--line)}
+.pi{display:flex;align-items:center;gap:14px;padding:10px 16px 10px 20px;border-bottom:1px solid #f0ebe1;cursor:pointer;flex-wrap:wrap}
+.pi:last-child{border-bottom:0}
+.pi:hover{background:#faf6ef}
+.rk2{font-size:12px;color:var(--tan);min-width:30px;font-weight:500;margin-right:6px}
+.pi .main{flex:1;min-width:200px}
+.pdt{text-align:right;width:78px}
+.pdt small{display:block;font-size:11px;color:var(--mut)}
+.pdt b{font-weight:500;font-size:14px}
+.pdt b.late{color:var(--red)}.pdt b.soon{color:var(--amb)}
+.pst{width:118px;text-align:right}
+.pac{width:120px;text-align:right}
+.sbar{position:absolute;top:19px;height:8px;border-radius:5px;background:#cfc3aa}
+.bar2.est{background:transparent;border:2px dashed var(--c)}
+.bar2.est span{color:#5c5749;text-shadow:none}
+.lg-est{border:2px dashed #97a07a;background:transparent !important}
+@media (max-width:860px){.pdt{width:auto;text-align:left}.pst,.pac{width:auto}.pgb{display:none}.atab{font-size:14px;padding:8px 12px 10px}}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -455,16 +496,18 @@ const COLS=['obras','cronograma','solicitacoes','requisicoes'];
 const USERS=[{id:'waleska',nome:'Waleska'},{id:'barbara',nome:'Barbara'}];
 const userNome=id=>(USERS.find(u=>u.id===id)||{}).nome||'';
 
-const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'sigla',l:'Sigla (numeração)',req:1,ph:'Ex.: VP'},{k:'fase',l:'Fase',t:'select',o:FASES},{k:'responsavel',l:'Arquiteta responsável',t:'select',o:USERS.map(u=>u.id),ol:Object.fromEntries(USERS.map(u=>[u.id,{l:u.nome}]))}];
+const F_OBRA=[{k:'nome',l:'Nome da obra',req:1,w:2},{k:'sigla',l:'Sigla (numeração)',req:1,ph:'Ex.: VP'},{k:'fase',l:'Fase',t:'select',o:FASES},{k:'responsavel',l:'Arquiteta responsável',t:'select',o:USERS.map(u=>u.id),ol:Object.fromEntries(USERS.map(u=>[u.id,{l:u.nome}]))},
+ {s:'Etapas da obra (calculam o cronograma)'},{k:'etAlvenaria',l:'Início da alvenaria',t:'date'},{k:'etAcabamentos',l:'Início dos acabamentos',t:'date'},{k:'etEntrega',l:'Entrega da obra',t:'date'}];
 const F_CRON=[
  {s:'Item'},
  {k:'item',l:'Item',req:1,w:2,ph:'Ex.: Porcelanato 90x90 hall social'},
+ {k:'area',l:'Área',t:'select',o:['terreo','unidades','subsolos','fachada'],ol:{terreo:{l:'Térreo'},unidades:{l:'Unidades'},subsolos:{l:'Subsolos e escadas'},fachada:{l:'Fachada'}}},{k:'prio',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
  {k:'categoria',l:'Categoria',t:'select',o:CATS},{k:'tipo',l:'Como é comprado',t:'select',o:['geral','ambiente'],ol:{geral:{l:'Compra geral (de uma vez, por categoria)'},ambiente:{l:'Por ambiente'}}},
  {k:'local',l:'Ambiente / local',w:2,ph:'Ex.: Hall térreo'},
  {k:'qtd',l:'Quantidade estimada',t:'number'},{k:'un',l:'Unidade',t:'select',o:UNS},
  {s:'Prazos'},
- {k:'dataNecessaria',l:'Necessário em obra',t:'date'},
- {k:'leadDias',l:'Prazo do fornecedor (dias)',t:'number',hint:'Calcula a data-limite para pedir'},
+ {k:'dataNecessaria',l:'Necessário em obra',t:'date',hint:'Em branco = estimado pela etapa da obra'},
+ {k:'leadDias',l:'Prazo do fornecedor (dias)',t:'number',hint:'Em branco = prazo médio da categoria'},
  {k:'obs',l:'Observações',t:'area',w:2}];
 const F_SOL=[
  {s:'Produto'},
@@ -518,6 +561,7 @@ const IC={
  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
+ list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="2.6"/>',
  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h6M10 17h7"/>',
  grid:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>'
 };
@@ -531,12 +575,12 @@ const fotoDiv=o=>fotoOf(o)?`<div class="ph0" style="background-image:url('${Stri
 const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[]};
 let CFG={emailCompras:EMAIL_PADRAO};
 let db=null, mode='loading', canWrite=true, pendingRender=false;
-const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'timeline',grp:'local'};
+const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'prio',grp:'local',area:'terreo'};
 let ME=null;
 const meNome=()=>userNome(ME);
 try{Object.assign(UI,JSON.parse(localStorage.getItem('ca_ui2')||'{}'));UI.q=''}catch(e){}
 if(UI.reqStatus!=='todas'&&!REQ_ST[UI.reqStatus])UI.reqStatus='todas';
-const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({grp:UI.grp,cview:UI.cview,obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
+const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({area:UI.area,cview:UI.cview,obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 
@@ -570,7 +614,18 @@ const isMine=id=>{const o=obraById(id);return !!o&&o.responsavel===ME};
 const byId=(col,id)=>S[col].find(x=>x.id===id);
 const solOf=cronId=>S.solicitacoes.find(s=>s.cronId===cronId&&s.status!=='cancelada');
 const reqOf=solId=>S.requisicoes.find(r=>r.solId===solId&&r.status!=='cancelada');
-const limite=c=>c.dataNecessaria?shiftD(c.dataNecessaria,-(Number(c.leadDias)||0)):null;
+const CAT_ETAPA={'Esquadrias':['alv',75],'Fachada':['alv',45],'Ralos e perfis':['alv',20],'Forro / gesso':['alv',20],'Louças e metais':['acab',30],'Revestimentos':['acab',30],'Pisos (vinílico/laminado)':['acab',30],'Marmoraria / pedras':['acab',25],'Portas e ferragens':['acab',40],'Vidros e espelhos':['acab',20],'Iluminação':['acab',35],'Pintura':['acab',10],'Equipamentos':['acab',45],'Outros':['acab',30],'Comunicação visual':['ent',20],'Paisagismo':['ent',20],'Marcenaria':['ent',50],'Mobiliário / decoração':['ent',45],'Lazer e playground':['ent',40],'Eletros e eletrônicos':['ent',15]};
+const ETAPA_NOME={alv:'início da alvenaria',acab:'início dos acabamentos',ent:'30 dias antes da entrega'},ETAPA_RANK={alv:1,acab:2,ent:3};
+const etapaOf=c=>CAT_ETAPA[c.categoria]||['acab',30];
+function dataEf(c){if(c.dataNecessaria)return c.dataNecessaria;const o=obraById(c.obra)||{};const e=etapaOf(c)[0];return (e==='alv'?o.etAlvenaria:e==='acab'?o.etAcabamentos:(o.etEntrega?shiftD(o.etEntrega,-30):null))||null}
+const estimado=c=>!c.dataNecessaria&&!!dataEf(c);
+const leadEf=c=>c.leadDias!=null&&c.leadDias!==''?Number(c.leadDias):etapaOf(c)[1];
+const limite=c=>{const d=dataEf(c);return d?shiftD(d,-leadEf(c)):null};
+const PRIO_RANK={Urgente:0,Alta:1};
+const cmpItems=(a,b)=>((PRIO_RANK[a.prio]??2)-(PRIO_RANK[b.prio]??2))||String(limite(a)||'9999').localeCompare(String(limite(b)||'9999'))||(ETAPA_RANK[etapaOf(a)[0]]-ETAPA_RANK[etapaOf(b)[0]])||(leadEf(b)-leadEf(a))||String(a.criadoEm||'').localeCompare(String(b.criadoEm||''));
+const AREAS=[['terreo','Térreo'],['unidades','Unidades'],['subsolos','Subsolos e escadas'],['fachada','Fachada']];
+function areaOf(c){if(c.area)return c.area;const l=String(c.local||'').toLowerCase();
+  if(/unidade/.test(l))return 'unidades';if(/subsolo|escada/.test(l)||l==='geral')return 'subsolos';if(/fachada/.test(l)||c.categoria==='Fachada')return 'fachada';return 'terreo'}
 
 function cronStatus(c){
   const s=solOf(c.id);
@@ -796,12 +851,17 @@ function renderObra(){
   const al=s.late+s.soon;
   let tb='';
   if(UI.view==='cronograma'){
-    tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, local…" value="${esc(UI.q)}">
-      <select id="cat"><option value="">Todas as categorias</option>${CATS.map(c=>`<option ${UI.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
-      <div class="vsw"><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
-      ${packBanner(o.id)}${flowChart(o.id)}
-      ${canWrite&&UI.cview==='planilha'?'<div class="hint">Edite direto na célula. Para incluir, digite na última linha e tecle <b>Enter</b> (ou cole linhas do Excel).</div>':''}`;
-    if(UI.cview==='timeline')tb+=`<div class="hint">Barra = do <b>dia limite para pedir</b> até a <b>data em obra</b> (◆). Clique num grupo para recolher.</div>`;
+    const crO=S.cronograma.filter(c=>c.obra===o.id);
+    const semEtapas=!o.etAlvenaria&&!o.etAcabamentos&&!o.etEntrega;
+    tb=`${packBanner(o.id)}
+      <div class="atabs">${AREAS.map(([k,l])=>{const it=crO.filter(c=>areaOf(c)===k),lt=it.filter(c=>cronStatus(c).k==='late').length;return `<button class="atab ${UI.area===k?'on':''}" data-area="${k}">${l}<span class="c">${it.length}</span>${lt?`<span class="c al">${lt} atras.</span>`:''}</button>`}).join('')}</div>
+      ${semEtapas&&canWrite?`<div class="etb">📅 Informe as <b>etapas da obra</b> (alvenaria, acabamentos e entrega) para o sistema calcular quando pedir cada item e montar a linha do tempo. <button class="btn sm pri" data-editobra>Informar etapas</button></div>`:''}
+      <div class="toolbar"><input type="search" id="q" placeholder="Buscar nesta área…" value="${esc(UI.q)}">
+      <div class="vsw"><button class="${UI.cview==='prio'?'on':''}" data-cview="prio">${ico('list')} Prioridades</button><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
+      ${flowChart(crO.filter(c=>areaOf(c)===UI.area))}`;
+    if(UI.cview==='prio')tb+=`<div class="hint">Ordem de compra sugerida: primeiro o que precisa ser pedido antes (data limite e prazo do fornecedor). Itens marcados como <b>Urgente</b> ou <b>Alta</b> sobem para o topo. ≈ = data estimada pela etapa da obra.</div>`;
+    else if(UI.cview==='timeline')tb+=`<div class="hint">Barra = do <b>dia limite para pedir</b> até a <b>data em obra</b> (◆). Barra tracejada = data estimada pela etapa da obra.</div>`;
+    else if(canWrite)tb+=`<div class="hint">Edite direto na célula. Para incluir, digite na última linha e tecle <b>Enter</b> (ou cole linhas do Excel). Datas e prazos em branco usam a estimativa.</div>`;
   }else if(UI.view==='solicitacoes'){
     tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, fornecedor, nº…" value="${esc(UI.q)}">
       <label class="chk"><input type="checkbox" id="cancel" ${UI.cancel?'checked':''}> Mostrar canceladas</label>
@@ -830,7 +890,7 @@ function renderObra(){
 }
 function renderItems(){
   const box=$('#items');if(!box)return;
-  if(UI.view==='cronograma')box.innerHTML=UI.cview==='timeline'?cronTimeline():cronTable();
+  if(UI.view==='cronograma')box.innerHTML=UI.cview==='timeline'?cronTimeline():UI.cview==='planilha'?cronTable():cronPrio();
   else if(UI.view==='solicitacoes')box.innerHTML=solBoard();
   else if(UI.view==='orcamento')box.innerHTML=orcamentoView();
   else box.innerHTML=reqTable();
@@ -903,28 +963,19 @@ async function importPack(k){
 }
 const CAT_GERAL=new Set(['Revestimentos','Pisos (vinílico/laminado)','Louças e metais','Ralos e perfis','Marmoraria / pedras','Esquadrias','Fachada','Portas e ferragens','Vidros e espelhos','Iluminação','Pintura','Forro / gesso','Paisagismo','Comunicação visual']);
 const tipoOf=c=>c.tipo||(CAT_GERAL.has(c.categoria)?'geral':'ambiente');
-const secKey=c=>tipoOf(c)==='geral'?'G|'+(c.categoria||'Sem categoria'):'A|'+(c.local||'Sem ambiente');
-const secName=k=>k.slice(2);
-let CLOSED=new Set();try{CLOSED=new Set(JSON.parse(localStorage.getItem('ca_closed')||'[]'))}catch(e){}
-const saveClosed=()=>lsSet('ca_closed',JSON.stringify([...CLOSED]));
-function orderSecs(list){
-  const first={};list.forEach(c=>{const k=secKey(c);const t=String(c.criadoEm||'');if(!(k in first)||t<first[k])first[k]=t});
-  return Object.keys(first).sort((a,b)=>{
-    if(a[0]!==b[0])return a[0]==='G'?-1:1;
-    const sa=/^Sem /.test(secName(a)),sb=/^Sem /.test(secName(b));if(sa!==sb)return sa-sb;
-    if(a[0]==='G')return CATS.indexOf(secName(a))-CATS.indexOf(secName(b));
-    return first[a].localeCompare(first[b])});
-}
-const SEC_TXT={G:['Compras gerais','compradas de uma vez para a obra toda — por categoria'],A:['Compras por ambiente','itens específicos de cada espaço']};
-function secStats(items){const n=items.length,done=items.filter(c=>['pedido','entregue'].includes(stageOf(c))).length,late=items.filter(c=>cronStatus(c).k==='late').length;return {n,done,late}}
-function grpHead(k,items,mode){
-  const st=secStats(items),open=!CLOSED.has(UI.obra+'::'+k);
-  const add=canWrite?`<button class="lnk addamb" data-addgrp="${esc(k)}">+ item</button>`:'';
-  const info=`<span class="gi">${st.n} ${st.n===1?'item':'itens'}${st.done?` · ${st.done} comprado${st.done>1?'s':''}`:''}${st.late?` · <b class="r">${st.late} atrasado${st.late>1?'s':''}</b>`:''}</span>`;
-  return {open,html:`<span class="chev">${open?'▾':'▸'}</span>${esc(secName(k))}${info}${add}`};
-}
-function flowChart(obraId){
-  const cr=S.cronograma.filter(c=>c.obra===obraId);
+const grpOf=c=>tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?(c.categoria||'Sem categoria'):c.local;
+const grpTipo=c=>tipoOf(c)==='geral'||!c.local||/geral/i.test(c.local)?'geral':'ambiente';
+let CLOSED=new Set();try{CLOSED=new Set(JSON.parse(localStorage.getItem('ca_closed2')||'[]'))}catch(e){}
+const saveClosed=()=>lsSet('ca_closed2',JSON.stringify([...CLOSED]));
+const isOpen=g=>!CLOSED.has(UI.obra+'::'+UI.area+'::'+g);
+function cronFiltered(){const id=UI.obra;return S.cronograma.filter(c=>c.obra===id&&areaOf(c)===UI.area&&matchQ(c,['item','local','categoria','obs'])&&(!UI.stage||stageOf(c)===UI.stage))}
+function grouped(arr){const G={};arr.forEach(c=>{const g=grpOf(c);(G[g]=G[g]||[]).push(c)});Object.values(G).forEach(l=>l.sort(cmpItems));
+  return Object.keys(G).sort((a,b)=>cmpItems(G[a][0],G[b][0])).map(g=>({g,items:G[g],tipo:grpTipo(G[g][0])}))}
+function grpInfo(items){const n=items.length,done=items.filter(c=>['pedido','entregue'].includes(stageOf(c))).length,late=items.filter(c=>cronStatus(c).k==='late').length;
+  const lims=items.map(limite).filter(Boolean).sort();return {n,done,late,first:lims[0]||null}}
+const dTxt=c=>{const d=dataEf(c);return d?(estimado(c)?'≈ ':'')+fmtD(d):'—'};
+const lTxt=c=>{const L=limite(c);return L?(estimado(c)||c.leadDias==null||c.leadDias===''?'≈ ':'')+fmtD(L):'—'};
+function flowChart(cr){
   const n={};STAGES.forEach(([k])=>n[k]=0);cr.forEach(c=>n[stageOf(c)]++);
   let late=0,soon=0;cr.forEach(c=>{const k=cronStatus(c).k;if(k==='late')late++;if(k==='soon')soon++});
   const tot=cr.length||1;
@@ -934,86 +985,90 @@ function flowChart(obraId){
     ${k==='pedir'&&(late||soon)?`<em class="${late?'r':''}">${late?late+' atrasado'+(late>1?'s':''):''}${late&&soon?' · ':''}${soon?soon+' esta semana':''}</em>`:'<em>&nbsp;</em>'}</button>`).join('')}</div>
   ${UI.stage?`<div class="hint">Mostrando só <b>${STAGES.find(x=>x[0]===UI.stage)[1]}</b> · <button class="lnk" data-stage="${UI.stage}" style="text-decoration:underline">mostrar todos</button></div>`:''}`;
 }
-function cronFiltered(){const id=UI.obra;return S.cronograma.filter(c=>c.obra===id&&matchQ(c,['item','local','categoria','obs'])&&(!UI.cat||c.categoria===UI.cat)&&(!UI.pend||!solOf(c.id))&&(!UI.stage||stageOf(c)===UI.stage))}
+function emptyArea(){return `<div class="empty"><b>${UI.q||UI.stage?'Nada com esses filtros':'Nenhum item nesta área'}</b>${UI.q||UI.stage?'':'Use “Novo item” ou a Planilha (dá para colar do Excel).'}</div>`}
+const stPill=c=>{const k=stageOf(c),cs=cronStatus(c);return k==='pedir'&&(cs.k==='late'||cs.k==='soon')?`<span class="pill p-${cs.k}">${esc(cs.l)}</span>`:`<span class="pill" style="background:${STC[k]};color:${['pedir','solicitado'].includes(k)?'#3e3b31':'#fff'}">${STAGES.find(s=>s[0]===k)[1]}</span>`};
+function cronPrio(){
+  const arr=cronFiltered();if(!arr.length)return emptyArea();
+  return `<div class="plist">${grouped(arr).map(({g,items,tipo},gi)=>{const inf=grpInfo(items),op=isOpen(g);
+    return `<div class="pg ${inf.late?'late':''}"><div class="pgh" data-tog="${esc(g)}"><span class="rk">${gi+1}</span>
+      <div class="pgt"><b>${esc(g)}</b><small>${tipo==='geral'?'Compra geral':'Ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
+      <div class="pgd">${inf.first?`<small>pedir a partir de</small><b>${fmtD(inf.first)}</b>`:'<small>sem data</small>'}</div>
+      <div class="pgb"><i style="width:${Math.round(inf.done/inf.n*100)}%"></i></div>
+      ${canWrite?`<button class="lnk" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}<span class="chev">${op?'▾':'▸'}</span></div>
+      ${op?`<div class="pgl">${items.map((c,i)=>{const sol=solOf(c.id);return `<div class="pi" data-cron="${esc(c.id)}"><span class="rk2">${gi+1}.${i+1}</span>
+        <div class="main"><div class="t">${esc(c.item)}${c.prio&&c.prio!=='Normal'?` <span class="pill p-${PRIO[c.prio]}" style="font-size:11px;padding:1px 8px">${c.prio}</span>`:''}${/^Sugestão/.test(c.obs||'')?' <span class="sug">sugestão</span>':''}</div>
+        <div class="m">${esc(join([tipo==='geral'?c.local:c.categoria,qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div>
+        <div class="pdt"><small>pedir até</small><b class="${cronStatus(c).k}">${lTxt(c)}</b></div><div class="pdt"><small>em obra</small><b>${dTxt(c)}</b></div>
+        <div class="pst">${stPill(c)}</div>
+        <div class="pac">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button>`:sol?`<button class="lnk" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')}</button>`:''}</div></div>`}).join('')}</div>`:''}</div>`}).join('')}</div>`;
+}
 function cronTimeline(){
-  const arr=cronFiltered();
-  if(!arr.length)return `<div class="empty"><b>${UI.q||UI.cat||UI.pend||UI.stage?'Nada com esses filtros':'Cronograma vazio'}</b>${UI.q||UI.cat||UI.pend||UI.stage?'':'Lance os itens pela <b>Planilha</b> (dá para colar do Excel) ou pelo botão Novo item.'}${canWrite&&!UI.stage?'<br><button class="btn pri" data-cview="planilha">Abrir planilha</button>':''}</div>`;
-  const dated=arr.filter(c=>c.dataNecessaria),undated=arr.filter(c=>!c.dataNecessaria);
+  const arr=cronFiltered();if(!arr.length)return emptyArea();
+  const dated=arr.filter(c=>dataEf(c)),undated=arr.filter(c=>!dataEf(c));
   let html='';
   if(dated.length){
     const T=today();
-    const ds=dated.flatMap(c=>[parseD(limite(c)),parseD(c.dataNecessaria)]).concat([T]);
+    const ds=dated.flatMap(c=>[parseD(limite(c)),parseD(dataEf(c))]).concat([T]);
     let st=new Date(Math.min(...ds));st=new Date(st.getFullYear(),st.getMonth(),1);
     let en=new Date(Math.max(...ds));en=new Date(en.getFullYear(),en.getMonth()+1,0);
     const days=Math.round((en-st)/864e5)+1;
-    const PX=Math.max(4,Math.min(14,Math.round(900/days)));
+    const PX=Math.max(3,Math.min(14,Math.round(900/days)));
     const W=days*PX,x=d=>Math.round((d-st)/864e5)*PX;
     let months='',cur=new Date(st);
     while(cur<=en){const nx=new Date(cur.getFullYear(),cur.getMonth()+1,1);const w=x(nx>en?new Date(en.getTime()+864e5):nx)-x(cur);
       months+=`<div class="tm" style="left:${x(cur)}px;width:${w}px">${MESES[cur.getMonth()].slice(0,3)}${cur.getMonth()===0||cur.getTime()===st.getTime()?' '+String(cur.getFullYear()).slice(2):''}</div>`;cur=nx}
-    const groups={};dated.forEach(c=>{const g=secKey(c);(groups[g]=groups[g]||[]).push(c)});
-    let rows='',lastSec=null;
-    orderSecs(dated).forEach(g=>{
-      if(g[0]!==lastSec){lastSec=g[0];rows+=`<div class="tsec"><div class="tl"><b>${SEC_TXT[g[0]][0]}</b><small>${SEC_TXT[g[0]][1]}</small></div><div class="tr" style="width:${W}px"></div></div>`}
-      const h=grpHead(g,groups[g]);
-      rows+=`<div class="tg" data-tog="${esc(g)}"><div class="tl">${h.html}</div><div class="tr" style="width:${W}px"></div></div>`;
-      if(!h.open)return;
-      groups[g].sort((a,b)=>limite(a).localeCompare(limite(b))).forEach(c=>{
-        const L=parseD(limite(c)),N=parseD(c.dataNecessaria),k=stageOf(c),cs=cronStatus(c);
+    let rows='';
+    grouped(dated).forEach(({g,items,tipo},gi)=>{
+      const inf=grpInfo(items),op=isOpen(g);
+      const a=Math.min(...items.map(c=>parseD(limite(c)))),b=Math.max(...items.map(c=>parseD(dataEf(c))));
+      rows+=`<div class="tg" data-tog="${esc(g)}"><div class="tl"><span class="chev">${op?'▾':'▸'}</span><span class="rk sm">${gi+1}</span>${esc(g)} <span class="gi">${inf.n}${inf.late?` · <b class="r">${inf.late} atras.</b>`:''}</span></div>
+        <div class="tr" style="width:${W}px"><div class="sbar" style="left:${x(new Date(a))}px;width:${Math.max(x(new Date(b))-x(new Date(a)),PX*2)}px"></div></div></div>`;
+      if(!op)return;
+      items.forEach((c,i)=>{
+        const L=parseD(limite(c)),N=parseD(dataEf(c)),k=stageOf(c),cs=cronStatus(c);
         const l=x(L),w=Math.max(x(N)-l,PX*2);
-        const tip=`${c.item} — pedir até ${fmtDY(limite(c))} · em obra ${fmtDY(c.dataNecessaria)} · ${STAGES.find(s=>s[0]===k)[1]}`;
-        rows+=`<div class="trow"><div class="tl" data-cron="${esc(c.id)}"><b>${esc(c.item)}</b><small>${esc(join([qtdTxt(c),g[0]==='G'?c.local:c.categoria]))}</small></div>
-          <div class="tr" style="width:${W}px"><div class="bar2 ${k==='pedir'?cs.k:''}" data-cron="${esc(c.id)}" title="${esc(tip)}" style="left:${l}px;width:${w}px;--c:${STC[k]}"><span>${w>90?esc(fmtD(limite(c))+' → '+fmtD(c.dataNecessaria)):''}</span></div><i class="dia" style="left:${l+w-6}px;--c:${STC[k]}" title="Em obra ${fmtDY(c.dataNecessaria)}"></i></div></div>`;
+        const tip=`${c.item} — pedir até ${fmtDY(limite(c))} · em obra ${fmtDY(dataEf(c))}${estimado(c)?' (estimado)':''} · ${STAGES.find(s=>s[0]===k)[1]}`;
+        rows+=`<div class="trow"><div class="tl" data-cron="${esc(c.id)}"><b><span class="rk2">${gi+1}.${i+1}</span>${esc(c.item)}</b><small>${esc(join([qtdTxt(c),tipo==='geral'?c.local:c.categoria]))}</small></div>
+          <div class="tr" style="width:${W}px"><div class="bar2 ${k==='pedir'?cs.k:''} ${estimado(c)?'est':''}" data-cron="${esc(c.id)}" title="${esc(tip)}" style="left:${l}px;width:${w}px;--c:${STC[k]}"><span>${w>90?esc(fmtD(limite(c))+' → '+fmtD(dataEf(c))):''}</span></div><i class="dia" style="left:${l+w-6}px;--c:${STC[k]}"></i></div></div>`;
       });
     });
     html+=`<div class="tw tl-wrap"><div class="tline" style="--w:${W}px"><div class="thead"><div class="tl">Item</div><div class="tr" style="width:${W}px">${months}</div></div>${rows}
       <div class="today" style="left:calc(var(--lw) + ${x(T)}px)"><span>hoje</span></div></div></div>
-      <div class="tleg">${STAGES.map(([k,l,c])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}<span><i class="lg-late"></i>Prazo de pedir vencido</span><span>◆ = data em obra</span></div>`;
+      <div class="tleg">${STAGES.map(([k,l,c])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}<span><i class="lg-late"></i>Prazo vencido</span><span><i class="lg-est"></i>Data estimada</span><span>◆ = em obra</span></div>`;
   }
-  if(undated.length){
-    const ug={};undated.forEach(c=>{const g=secKey(c);(ug[g]=ug[g]||[]).push(c)});
-    let lastSec=null,body='';
-    orderSecs(undated).forEach(g=>{
-      if(g[0]!==lastSec){lastSec=g[0];body+=`<div class="usec"><b>${SEC_TXT[g[0]][0]}</b><small>${SEC_TXT[g[0]][1]}</small></div>`}
-      const h=grpHead(g,ug[g]);
-      body+=`<div class="ugh" data-tog="${esc(g)}">${h.html}</div>`;
-      if(h.open)body+=`<div class="ugl">${ug[g].map(c=>{const k=stageOf(c);return `<div class="lrow" data-cron="${esc(c.id)}"><span class="pill" style="background:${STC[k]};color:${['pedir','solicitado'].includes(k)?'#3e3b31':'#fff'}">${STAGES.find(s=>s[0]===k)[1]}</span><div class="main"><div class="t">${esc(c.item)}${/^Sugestão/.test(c.obs||'')?' <span class="sug">sugestão</span>':''}</div><div class="m">${esc(join([g[0]==='G'?c.local:c.categoria,qtdTxt(c),/^Sugestão/.test(c.obs||'')?'':c.obs]))}</div></div></div>`}).join('')}</div>`;
-    });
-    html+=`<div class="panel" style="margin-top:16px"><div class="ph"><h2 style="font-size:16px">Sem data definida <span class="mut">(${undated.length})</span></h2><button class="lnk" data-cview="planilha">definir datas na planilha →</button></div>${body}</div>`;
-  }
+  if(undated.length)html+=`<div class="panel" style="margin-top:16px"><div class="ph"><h2 style="font-size:16px">Sem data <span class="mut">(${undated.length})</span></h2>${canWrite?'<button class="btn sm pri" data-editobra>Informar etapas da obra</button>':''}</div><div class="mut" style="font-size:13.5px">Esses itens aparecem na linha do tempo assim que a obra tiver as etapas informadas (ou quando você definir a data em obra deles).</div></div>`;
   return html;
 }
 function cronTable(){
   const ro=canWrite?'':' disabled';
   const arr=cronFiltered();
-  const groups={};arr.forEach(c=>{const g=secKey(c);(groups[g]=groups[g]||[]).push(c)});
-  const NC=11;let rows='',lastSec=null;
-  orderSecs(arr).forEach(g=>{
-    if(g[0]!==lastSec){lastSec=g[0];rows+=`<tr class="srow"><td colspan="${NC}"><b>${SEC_TXT[g[0]][0]}</b> <small>${SEC_TXT[g[0]][1]}</small></td></tr>`}
-    const h=grpHead(g,groups[g]);
-    rows+=`<tr class="mrow" data-tog="${esc(g)}"><td colspan="${NC}">${h.html}</td></tr>`;
-    if(!h.open)return;
-    groups[g].sort((a,b)=>(limite(a)||'9999').localeCompare(limite(b)||'9999')||String(a.criadoEm||'').localeCompare(String(b.criadoEm||''))).forEach(c=>{
-      const L=limite(c),st=cronStatus(c),sol=solOf(c.id);
+  const NC=13;let rows='';
+  grouped(arr).forEach(({g,items,tipo},gi)=>{
+    const inf=grpInfo(items),op=isOpen(g);
+    rows+=`<tr class="mrow" data-tog="${esc(g)}"><td colspan="${NC}"><span class="chev">${op?'▾':'▸'}</span><span class="rk sm">${gi+1}</span>${esc(g)}<span class="gi">${tipo==='geral'?'compra geral':'ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</span>${canWrite?`<button class="lnk addamb" data-addgrp="${esc(tipo+'|'+g)}">+ subitem</button>`:''}</td></tr>`;
+    if(!op)return;
+    items.forEach(c=>{
+      const st=cronStatus(c),sol=solOf(c.id);
       rows+=`<tr data-row="${esc(c.id)}">
       <td><input class="cell it" data-f="item" value="${esc(c.item)}"${ro}></td>
-      <td style="min-width:190px"><select class="cell" data-f="categoria"${ro}>${optList(CATS,c.categoria)}</select></td>
-      <td style="width:128px"><select class="cell" data-f="tipo"${ro}><option value="geral"${tipoOf(c)==='geral'?' selected':''}>Geral</option><option value="ambiente"${tipoOf(c)==='ambiente'?' selected':''}>Por ambiente</option></select></td>
-      <td style="min-width:170px"><input class="cell" data-f="local" value="${esc(c.local)}" placeholder="—"${ro}></td>
-      <td style="width:76px"><input class="cell n" data-f="qtd" inputmode="decimal" value="${esc(numTxt(c.qtd))}" placeholder="—"${ro}></td>
-      <td style="width:70px"><select class="cell" data-f="un"${ro}>${optList(UNS,c.un)}</select></td>
-      <td style="width:136px"><input class="cell" type="date" data-f="dataNecessaria" value="${esc(c.dataNecessaria||'')}"${ro}></td>
-      <td style="width:84px"><input class="cell n" data-f="leadDias" inputmode="numeric" value="${esc(numTxt(c.leadDias))}" placeholder="—"${ro}></td>
-      <td class="calc ${st.k==='late'||st.k==='soon'?st.k:''}">${fmtD(L)}</td>
+      <td style="min-width:160px"><select class="cell" data-f="area"${ro}>${AREAS.map(([k,l])=>`<option value="${k}"${areaOf(c)===k?' selected':''}>${l}</option>`).join('')}</select></td>
+      <td style="min-width:180px"><select class="cell" data-f="categoria"${ro}>${optList(CATS,c.categoria)}</select></td>
+      <td style="width:122px"><select class="cell" data-f="tipo"${ro}><option value="geral"${tipoOf(c)==='geral'?' selected':''}>Geral</option><option value="ambiente"${tipoOf(c)==='ambiente'?' selected':''}>Por ambiente</option></select></td>
+      <td style="min-width:160px"><input class="cell" data-f="local" value="${esc(c.local)}" placeholder="—"${ro}></td>
+      <td style="width:70px"><input class="cell n" data-f="qtd" inputmode="decimal" value="${esc(numTxt(c.qtd))}" placeholder="—"${ro}></td>
+      <td style="width:64px"><select class="cell" data-f="un"${ro}>${optList(UNS,c.un)}</select></td>
+      <td style="width:136px"><input class="cell" type="date" data-f="dataNecessaria" value="${esc(c.dataNecessaria||'')}" title="${estimado(c)?'Estimado: '+fmtDY(dataEf(c)):''}"${ro}></td>
+      <td style="width:78px"><input class="cell n" data-f="leadDias" inputmode="numeric" value="${esc(numTxt(c.leadDias))}" placeholder="${etapaOf(c)[1]}"${ro}></td>
+      <td class="calc ${st.k==='late'||st.k==='soon'?st.k:''}">${lTxt(c)}</td>
+      <td style="width:100px"><select class="cell" data-f="prio"${ro}>${['Normal','Alta','Urgente'].map(p=>`<option${(c.prio||'Normal')===p?' selected':''}>${p}</option>`).join('')}</select></td>
       <td class="calc">${sol?`<span class="pill p-${st.k} pl" data-opensol="${esc(sol.id)}">${esc(sol.numero||'')} · ${esc(st.l)}</span>`:`<span class="pill p-${st.k}">${esc(st.l)}</span>`}</td>
       <td class="act">${!sol&&canWrite?`<button class="btn sm pri" data-solfrom="${esc(c.id)}">Solicitar →</button> `:''}<button class="ib" data-cron="${esc(c.id)}" title="Detalhes">⋯</button></td>
     </tr>`;
     });
   });
-  if(!arr.length&&(UI.q||UI.cat||UI.pend||UI.stage))rows=`<tr><td colspan="${NC}" class="calc mut" style="height:60px;text-align:center">Nada encontrado com esses filtros.</td></tr>`;
-  if(canWrite)rows+=`<tr class="addrow"><td colspan="${NC}"><input id="addcron" placeholder="+ Adicionar item — digite e Enter, ou cole linhas do Excel" autocomplete="off"></td></tr>`;
-  else if(!arr.length)rows+=`<tr><td colspan="${NC}" class="calc mut" style="height:60px;text-align:center">Cronograma vazio.</td></tr>`;
-  return `<div class="tw"><table class="st" style="min-width:1180px"><thead><tr><th>Item</th><th>Categoria</th><th>Compra</th><th>Ambiente</th><th>Qtd</th><th>Un</th><th>Em obra</th><th>Prazo forn. (d)</th><th>Pedir até</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  if(!arr.length&&(UI.q||UI.stage))rows=`<tr><td colspan="${NC}" class="calc mut" style="height:60px;text-align:center">Nada encontrado com esses filtros.</td></tr>`;
+  if(canWrite)rows+=`<tr class="addrow"><td colspan="${NC}"><input id="addcron" placeholder="+ Adicionar item nesta área — digite e Enter, ou cole linhas do Excel" autocomplete="off"></td></tr>`;
+  return `<div class="tw"><table class="st" style="min-width:1420px"><thead><tr><th>Subitem</th><th>Área</th><th>Categoria</th><th>Compra</th><th>Ambiente</th><th>Qtd</th><th>Un</th><th>Em obra</th><th>Prazo (d)</th><th>Pedir até</th><th>Prioridade</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 async function cellChange(el){
   const tr=el.closest('tr[data-row]');if(!tr)return;
@@ -1032,7 +1087,7 @@ async function addCron(text){
   for(let i=0;i<lines.length;i++){
     const p=lines[i].split('\t').map(x=>x.trim());
     const un=p[2]&&UNS.find(u=>u.toLowerCase()===p[2].toLowerCase().replace('m2','m²'));
-    const o={id:uid(),obra:UI.obra,item:p[0],criadoEm:new Date(base+i).toISOString(),categoria:UI.cat||'',un:un||'un'};
+    const o={id:uid(),obra:UI.obra,area:UI.area,item:p[0],criadoEm:new Date(base+i).toISOString(),categoria:'',un:un||'un'};
     if(p[1])o.qtd=parseNum(p[1]);
     if(p[3])o.local=p[3];
     if(p[4])o.dataNecessaria=parseDateBR(p[4]);
@@ -1266,7 +1321,7 @@ function shrink(file){return new Promise((res,rej)=>{const img=new Image();const
 /* ---------- cronograma (detalhes) ---------- */
 function openCron(c,pre){
   const isNew=!c;
-  c=c||Object.assign({id:uid(),obra:UI.obra,un:'un',criadoEm:nowISO()},pre||{});
+  c=c||Object.assign({id:uid(),obra:UI.obra,area:UI.area,prio:'Normal',un:'un',criadoEm:nowISO()},pre||{});
   const sol=!isNew&&solOf(c.id);
   const save=async f=>{const o=Object.assign({},c,readForm(F_CRON,f));const miss=missing(F_CRON,o);if(miss.length){toast('Preencha: '+miss.join(', '));return null}await put('cronograma',o);return o};
   const b=[];
@@ -1423,7 +1478,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1433,8 +1488,9 @@ document.addEventListener('click',e=>{
   if('editobra' in d)return openObra(obraById(UI.obra));
   if(d.obra){UI.obra=d.obra;UI.q='';UI.gq='';if($('#gq'))$('#gq').value='';saveUI();render();window.scrollTo(0,0);return}
   if(d.view){UI.view=d.view;UI.q='';saveUI();render();return}
-  if(d.addgrp!=null){e.stopPropagation();const g=d.addgrp;openCron(null,g[0]==='G'?{categoria:secName(g),tipo:'geral'}:{local:secName(g),tipo:'ambiente'});return}
-  if(d.tog!=null){const k=UI.obra+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
+  if(d.area){UI.area=d.area;UI.q='';UI.stage='';saveUI();render();return}
+  if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,tp==='geral'?{categoria:g,tipo:'geral'}:{local:g,tipo:'ambiente'});return}
+  if(d.tog!=null){const k=UI.obra+'::'+UI.area+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
   if(d.pack){t.disabled=true;importPack(d.pack);return}
   if('allcats' in d){UI.allcats=!UI.allcats;render();return}
   if(d.stage){UI.stage=UI.stage===d.stage?'':d.stage;render();return}
