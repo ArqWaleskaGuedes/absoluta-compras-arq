@@ -267,6 +267,57 @@ input.cell[type=date]{font-size:13.5px}
 .lcard.sel{padding:20px 14px}
 .lcard.sel.on{border-color:var(--ol);box-shadow:0 0 0 2px var(--ol)}
 .lerr{color:var(--red);font-size:14px;margin-top:10px;min-height:18px}
+.vsw{display:flex;background:#ece6db;border-radius:10px;padding:3px;gap:2px}
+.vsw button{border:0;background:transparent;font:400 14px Jost,sans-serif;color:#5c5749;padding:7px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.vsw button svg{width:17px;height:17px}
+.vsw button.on{background:#fffdf9;color:var(--ink);box-shadow:0 1px 3px rgba(60,50,30,.12)}
+.flowc{display:flex;align-items:stretch;gap:0;margin:4px 0 16px;overflow-x:auto;padding:2px 2px 6px}
+.fn{flex:1 1 0;min-width:122px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 13px 10px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:var(--sh);transition:.15s;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.fn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.fn:hover{transform:translateY(-2px)}
+.fn.on{border-color:var(--ol);box-shadow:0 0 0 2px var(--ol)}
+.fn.dim{opacity:.5}
+.fh{font-size:13px;color:#5c5749;display:flex;align-items:center;gap:7px}
+.fh i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.fn b{font-size:28px;font-weight:500;line-height:1.1}
+.fb{height:4px;background:#efe9de;border-radius:4px;overflow:hidden}
+.fb span{display:block;height:100%;background:var(--c)}
+.fn em{font-style:normal;font-size:11.5px;color:var(--amb);min-height:15px}
+.fn em.r{color:var(--red)}
+.farr{flex:none;width:30px;align-self:center;fill:none;stroke:#b7ab94;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tl-wrap{max-height:none;min-height:0;padding:0}
+.tline{--lw:250px;position:relative;width:calc(var(--lw) + var(--w));min-width:100%}
+.thead,.tg,.trow{display:flex}
+.tline .tl{flex:none;width:var(--lw);position:sticky;left:0;z-index:2;background:var(--card);border-right:1px solid var(--line);padding:8px 14px;min-width:0}
+.thead{position:sticky;top:0;z-index:3;background:var(--card);border-bottom:1px solid var(--line2)}
+.thead .tl{font-size:13.5px;font-weight:500;padding:12px 14px}
+.thead .tr{position:relative;height:42px}
+.tm{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);font-size:12.5px;color:#5c5749;padding:13px 0 0 8px;white-space:nowrap;overflow:hidden}
+.tr{position:relative;flex:none;background:repeating-linear-gradient(90deg,transparent 0,transparent 0)}
+.tg .tl{background:var(--card2);font-size:11.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--tan);padding:9px 14px}
+.tg .tl span{color:var(--mut);margin-left:6px}
+.tg .tr{background:var(--card2)}
+.trow{border-bottom:1px solid #efe9de}
+.trow:hover .tl,.trow:hover .tr{background:#f8f3ea}
+.trow .tl{cursor:pointer}
+.trow .tl b{display:block;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tl small{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tr{height:52px}
+.bar2{position:absolute;top:15px;height:22px;border-radius:7px;background:var(--c);cursor:pointer;display:flex;align-items:center;padding:0 9px;transition:.15s;box-shadow:0 1px 3px rgba(60,50,30,.15)}
+.bar2:hover{filter:brightness(.95);transform:scaleY(1.12)}
+.bar2 span{font-size:11.5px;color:#fff;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.2)}
+.bar2[style*="#e2d8c6"] span,.bar2[style*="#c9b48f"] span{color:#3e3b31;text-shadow:none}
+.bar2.late{background:repeating-linear-gradient(135deg,#e9b9ad 0 6px,#f4d6ce 6px 12px);border:1px solid var(--red)}
+.bar2.late span{color:var(--red);text-shadow:none}
+.bar2.soon{border:1px solid var(--amb)}
+.dia{position:absolute;top:20px;width:12px;height:12px;background:var(--c);border:2px solid #fff;transform:rotate(45deg);box-shadow:0 1px 3px rgba(0,0,0,.2);pointer-events:none}
+.today{position:absolute;top:0;bottom:0;width:2px;background:#b5654f;z-index:1;pointer-events:none}
+.today span{position:absolute;top:44px;left:4px;font-size:11px;color:#fff;background:#b5654f;padding:1px 6px;border-radius:5px}
+.tleg{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;color:#5c5749}
+.tleg span{display:flex;align-items:center;gap:7px}
+.tleg i{width:14px;height:10px;border-radius:3px}
+.lg-late{background:repeating-linear-gradient(135deg,#e9b9ad 0 3px,#f4d6ce 3px 6px);border:1px solid var(--red)}
+@media (max-width:860px){.tline{--lw:150px}.fn{min-width:108px}.fn b{font-size:22px}.farr{width:20px}}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -428,7 +479,9 @@ const IC={
  warn:'<path d="M12 3.5L2.5 20h19L12 3.5z"/><path d="M12 10v4.5M12 17.3v.2"/>',
  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
- plus:'<path d="M12 5v14M5 12h14"/>'
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h6M10 17h7"/>',
+ grid:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>'
 };
 const ico=(k,cls='i')=>`<svg class="${cls}" viewBox="0 0 24 24">${IC[k]}</svg>`;
 const BLDG='<svg viewBox="0 0 120 110"><path d="M10 108V30l40-22v100M50 108V40l58 18v50M2 108h116"/><path d="M20 40h10M20 52h10M20 64h10M20 76h10M20 88h10M62 62h12M84 68h12M62 76h12M84 82h12M62 90h12M84 96h12"/></svg>';
@@ -438,12 +491,12 @@ const fotoDiv=o=>o&&o.foto?`<div class="ph0" style="background-image:url('${Stri
 const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[]};
 let CFG={emailCompras:EMAIL_PADRAO};
 let db=null, mode='loading', canWrite=true, pendingRender=false;
-const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:''};
+const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'timeline'};
 let ME=null;
 const meNome=()=>userNome(ME);
 try{Object.assign(UI,JSON.parse(localStorage.getItem('ca_ui2')||'{}'));UI.q=''}catch(e){}
 if(UI.reqStatus!=='todas'&&!REQ_ST[UI.reqStatus])UI.reqStatus='todas';
-const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
+const saveUI=()=>{try{localStorage.setItem('ca_ui2',JSON.stringify({cview:UI.cview,obra:UI.obra,view:UI.view,reqStatus:UI.reqStatus,cancel:UI.cancel,scope:UI.scope}))}catch(e){}};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 
@@ -705,8 +758,10 @@ function renderObra(){
   if(UI.view==='cronograma'){
     tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, local…" value="${esc(UI.q)}">
       <select id="cat"><option value="">Todas as categorias</option>${CATS.map(c=>`<option ${UI.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
-      <label class="chk"><input type="checkbox" id="pend" ${UI.pend?'checked':''}> Só o que falta pedir</label></div>
-      ${canWrite?'<div class="hint">Clique na célula e edite direto. Para adicionar, digite na última linha e tecle <b>Enter</b> — ou <b>cole várias linhas do Excel</b> (Item · Qtd · Un · Local · Data em obra · Prazo forn.).</div>':''}`;
+      <div class="vsw"><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
+      ${flowChart(o.id)}
+      ${canWrite&&UI.cview==='planilha'?'<div class="hint">Clique na célula e edite direto. Para adicionar, digite na última linha e tecle <b>Enter</b> — ou <b>cole várias linhas do Excel</b> (Item · Qtd · Un · Local · Data em obra · Prazo forn.).</div>':''}`;
+    if(UI.cview==='timeline'&&canWrite)tb+=`<div class="hint">Cada barra vai do <b>dia limite para pedir</b> até a <b>data em que o item precisa estar na obra</b>. Clique na barra para editar. Para lançar vários itens de uma vez, use a <b>Planilha</b>.</div>`;
   }else if(UI.view==='solicitacoes'){
     tb=`<div class="toolbar"><input type="search" id="q" placeholder="Buscar item, fornecedor, nº…" value="${esc(UI.q)}">
       <label class="chk"><input type="checkbox" id="cancel" ${UI.cancel?'checked':''}> Mostrar canceladas</label>
@@ -733,16 +788,67 @@ function renderObra(){
 }
 function renderItems(){
   const box=$('#items');if(!box)return;
-  if(UI.view==='cronograma')box.innerHTML=cronTable();
+  if(UI.view==='cronograma')box.innerHTML=UI.cview==='timeline'?cronTimeline():cronTable();
   else if(UI.view==='solicitacoes')box.innerHTML=solBoard();
   else box.innerHTML=reqTable();
 }
 
 /* ---------- planilha do cronograma ---------- */
 const optList=(arr,v)=>`<option value=""></option>`+arr.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(x)}</option>`).join('');
+const STAGES=[['pedir','A pedir','#e2d8c6'],['solicitado','Solicitado','#c9b48f'],['cotacao','Em cotação','#97a07a'],['aprovado','Aprovado','#6f7a52'],['pedido','Pedido feito','#a98b66'],['entregue','Entregue','#4f5638']];
+const STC=Object.fromEntries(STAGES.map(([k,,c])=>[k,c]));
+function stageOf(c){const s=solOf(c.id);if(!s)return 'pedir';const r=reqOf(s.id);if(r)return r.status==='entregue'?'entregue':'pedido';return {nova:'solicitado',contato:'cotacao',cotada:'cotacao',aprovada:'aprovado',requisitada:'pedido'}[s.status]||'solicitado'}
+function flowChart(obraId){
+  const cr=S.cronograma.filter(c=>c.obra===obraId);
+  const n={};STAGES.forEach(([k])=>n[k]=0);cr.forEach(c=>n[stageOf(c)]++);
+  let late=0,soon=0;cr.forEach(c=>{const k=cronStatus(c).k;if(k==='late')late++;if(k==='soon')soon++});
+  const tot=cr.length||1;
+  const arrow='<svg class="farr" viewBox="0 0 34 20"><path d="M2 10h26M22 4l7 6-7 6"/></svg>';
+  return `<div class="flowc">${STAGES.map(([k,l,c],i)=>`${i?arrow:''}<button class="fn ${UI.stage===k?'on':''} ${UI.stage&&UI.stage!==k?'dim':''}" data-stage="${k}" style="--c:${c}">
+    <span class="fh"><i></i>${l}</span><b>${n[k]}</b><span class="fb"><span style="width:${Math.round(n[k]/tot*100)}%"></span></span>
+    ${k==='pedir'&&(late||soon)?`<em class="${late?'r':''}">${late?late+' atrasado'+(late>1?'s':''):''}${late&&soon?' · ':''}${soon?soon+' esta semana':''}</em>`:'<em>&nbsp;</em>'}</button>`).join('')}</div>
+  ${UI.stage?`<div class="hint">Mostrando só <b>${STAGES.find(x=>x[0]===UI.stage)[1]}</b> · <button class="lnk" data-stage="${UI.stage}" style="text-decoration:underline">mostrar todos</button></div>`:''}`;
+}
+function cronTimeline(){
+  const id=UI.obra;
+  const arr=S.cronograma.filter(c=>c.obra===id&&matchQ(c,['item','local','categoria','obs'])&&(!UI.cat||c.categoria===UI.cat)&&(!UI.pend||!solOf(c.id))&&(!UI.stage||stageOf(c)===UI.stage));
+  if(!arr.length)return `<div class="empty"><b>${UI.q||UI.cat||UI.pend||UI.stage?'Nada com esses filtros':'Cronograma vazio'}</b>${UI.q||UI.cat||UI.pend||UI.stage?'':'Lance os itens pela <b>Planilha</b> (dá para colar do Excel) ou pelo botão Novo item.'}${canWrite&&!UI.stage?'<br><button class="btn pri" data-cview="planilha">Abrir planilha</button>':''}</div>`;
+  const dated=arr.filter(c=>c.dataNecessaria),undated=arr.filter(c=>!c.dataNecessaria);
+  let html='';
+  if(dated.length){
+    const T=today();
+    const ds=dated.flatMap(c=>[parseD(limite(c)),parseD(c.dataNecessaria)]).concat([T]);
+    let st=new Date(Math.min(...ds));st=new Date(st.getFullYear(),st.getMonth(),1);
+    let en=new Date(Math.max(...ds));en=new Date(en.getFullYear(),en.getMonth()+1,0);
+    const days=Math.round((en-st)/864e5)+1;
+    const PX=Math.max(4,Math.min(14,Math.round(900/days)));
+    const W=days*PX,x=d=>Math.round((d-st)/864e5)*PX;
+    let months='',cur=new Date(st);
+    while(cur<=en){const nx=new Date(cur.getFullYear(),cur.getMonth()+1,1);const w=x(nx>en?new Date(en.getTime()+864e5):nx)-x(cur);
+      months+=`<div class="tm" style="left:${x(cur)}px;width:${w}px">${MESES[cur.getMonth()].slice(0,3)}${cur.getMonth()===0||cur.getTime()===st.getTime()?' '+String(cur.getFullYear()).slice(2):''}</div>`;cur=nx}
+    const groups={};dated.forEach(c=>{const g=c.categoria||'Sem categoria';(groups[g]=groups[g]||[]).push(c)});
+    const gk=Object.keys(groups).sort((a,b)=>(a==='Sem categoria')-(b==='Sem categoria')||a.localeCompare(b));
+    let rows='';
+    gk.forEach(g=>{
+      rows+=`<div class="tg"><div class="tl">${esc(g)} <span>${groups[g].length}</span></div><div class="tr" style="width:${W}px"></div></div>`;
+      groups[g].sort((a,b)=>limite(a).localeCompare(limite(b))).forEach(c=>{
+        const L=parseD(limite(c)),N=parseD(c.dataNecessaria),k=stageOf(c),cs=cronStatus(c);
+        const l=x(L),w=Math.max(x(N)-l,PX*2);
+        const tip=`${c.item} — pedir até ${fmtDY(limite(c))} · em obra ${fmtDY(c.dataNecessaria)} · ${STAGES.find(s=>s[0]===k)[1]}`;
+        rows+=`<div class="trow"><div class="tl" data-cron="${esc(c.id)}"><b>${esc(c.item)}</b><small>${esc(join([qtdTxt(c),c.local]))}</small></div>
+          <div class="tr" style="width:${W}px"><div class="bar2 ${k==='pedir'?cs.k:''}" data-cron="${esc(c.id)}" title="${esc(tip)}" style="left:${l}px;width:${w}px;--c:${STC[k]}"><span>${w>90?esc(fmtD(limite(c))+' → '+fmtD(c.dataNecessaria)):''}</span></div><i class="dia" style="left:${l+w-6}px;--c:${STC[k]}" title="Em obra ${fmtDY(c.dataNecessaria)}"></i></div></div>`;
+      });
+    });
+    html+=`<div class="tw tl-wrap"><div class="tline" style="--w:${W}px"><div class="thead"><div class="tl">Item</div><div class="tr" style="width:${W}px">${months}</div></div>${rows}
+      <div class="today" style="left:calc(var(--lw) + ${x(T)}px)"><span>hoje</span></div></div></div>
+      <div class="tleg">${STAGES.map(([k,l,c])=>`<span><i style="background:${c}"></i>${l}</span>`).join('')}<span><i class="lg-late"></i>Prazo de pedir vencido</span><span>◆ = data em obra</span></div>`;
+  }
+  if(undated.length)html+=`<div class="panel" style="margin-top:16px"><div class="ph"><h2 style="font-size:16px">Sem data definida <span class="mut">(${undated.length})</span></h2><button class="lnk" data-cview="planilha">definir na planilha →</button></div>${undated.map(c=>`<div class="lrow" data-cron="${esc(c.id)}"><span class="pill" style="background:${STC[stageOf(c)]};color:${['pedir','solicitado'].includes(stageOf(c))?'#3e3b31':'#fff'}">${STAGES.find(s=>s[0]===stageOf(c))[1]}</span><div class="main"><div class="t">${esc(c.item)}</div><div class="m">${esc(join([c.categoria,c.local,qtdTxt(c)]))}</div></div></div>`).join('')}</div>`;
+  return html;
+}
 function cronTable(){
   const id=UI.obra,ro=canWrite?'':' disabled';
-  let arr=S.cronograma.filter(c=>c.obra===id&&matchQ(c,['item','local','categoria','obs'])&&(!UI.cat||c.categoria===UI.cat)&&(!UI.pend||!solOf(c.id)));
+  let arr=S.cronograma.filter(c=>c.obra===id&&matchQ(c,['item','local','categoria','obs'])&&(!UI.cat||c.categoria===UI.cat)&&(!UI.pend||!solOf(c.id))&&(!UI.stage||stageOf(c)===UI.stage));
   arr=arr.map(c=>({c,L:limite(c)})).sort((a,b)=>(a.L||'9999').localeCompare(b.L||'9999')||String(a.c.criadoEm||'').localeCompare(String(b.c.criadoEm||'')));
   let rows='',lastK=null;
   const NC=10;
@@ -1174,16 +1280,18 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
   if('clearq' in d){UI.gq='';$('#gq').value='';render();return}
-  if('focusadd' in d){const a=$('#addcron');if(a){a.scrollIntoView({block:'center'});a.focus()}return}
+  if('focusadd' in d){if(UI.cview!=='planilha'){UI.cview='planilha';saveUI();render()}const a=$('#addcron');if(a){a.scrollIntoView({block:'center'});a.focus()}return}
   if('newobra' in d)return openObra();
   if('editobra' in d)return openObra(obraById(UI.obra));
   if(d.obra){UI.obra=d.obra;UI.q='';UI.gq='';if($('#gq'))$('#gq').value='';saveUI();render();window.scrollTo(0,0);return}
   if(d.view){UI.view=d.view;UI.q='';saveUI();render();return}
+  if(d.stage){UI.stage=UI.stage===d.stage?'':d.stage;render();return}
+  if(d.cview){UI.cview=d.cview;saveUI();render();return}
   if(d.chip){const[k,v]=d.chip.split(':');UI[k]=v;saveUI();render();return}
   if('mailbatch' in d)return mailBatch();
   if(d.mailsol)return mailSol(byId('solicitacoes',d.mailsol));
