@@ -506,7 +506,9 @@ const IC={
 };
 const ico=(k,cls='i')=>`<svg class="${cls}" viewBox="0 0 24 24">${IC[k]}</svg>`;
 const BLDG='<svg viewBox="0 0 120 110"><path d="M10 108V30l40-22v100M50 108V40l58 18v50M2 108h116"/><path d="M20 40h10M20 52h10M20 64h10M20 76h10M20 88h10M62 62h12M84 68h12M62 76h12M84 82h12M62 90h12M84 96h12"/></svg>';
-const fotoDiv=o=>o&&o.foto?`<div class="ph0" style="background-image:url('${String(o.foto).replace(/'/g,'')}')"></div>`:`<div class="ph0 ph-none">${BLDG}</div>`;
+const FOTOS_PADRAO={dom:'img/dom.jpg'};
+const fotoOf=o=>o&&(o.foto||FOTOS_PADRAO[o.id])||'';
+const fotoDiv=o=>fotoOf(o)?`<div class="ph0" style="background-image:url('${String(fotoOf(o)).replace(/'/g,'')}');background-position:center 45%"></div>`:`<div class="ph0 ph-none">${BLDG}</div>`;
 
 /* ---------- estado ---------- */
 const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[]};
