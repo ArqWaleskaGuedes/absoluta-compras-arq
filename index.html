@@ -395,6 +395,10 @@ input.cell[type=date]{font-size:13.5px}
 .bar2.est span{color:#5c5749;text-shadow:none}
 .lg-est{border:2px dashed #97a07a;background:transparent !important}
 @media (max-width:860px){.pdt{width:auto;text-align:left}.pst,.pac{width:auto}.pgb{display:none}.atab{font-size:14px;padding:8px 12px 10px}}
+.mprev{border:1px solid var(--line2);border-radius:12px;background:#fff;padding:18px 20px;max-height:52vh;overflow:auto}
+.mdet{margin-top:12px;font-size:13.5px;color:#5c5749}
+.mdet summary{cursor:pointer;padding:4px 0}
+.mdet .mailbody{margin-top:8px}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -666,6 +670,7 @@ const ref=p=>firebase.database().ref(ROOT+'/'+p);
 function setConn(kind,txt){const c=$('#conn');c.className='conn '+kind;c.querySelector('span').textContent=txt}
 function setBanner(t){$('#banner').innerHTML=t?`<div>${esc(t)}</div>`:''}
 function init(){
+  const qa=new URLSearchParams(location.search).get('arquivo');if(qa){abrirArquivo(qa);return}
   render();
   try{firebase.initializeApp(FB_CONFIG)}catch(e){}
   firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
@@ -719,10 +724,28 @@ async function put(col,obj){
 async function patch(col,id,fields){const cur=byId(col,id);if(!cur)return;await put(col,Object.assign({},cur,fields))}
 async function del(col,id){try{await ref(col+'/'+id).remove()}catch(e){toast('Não foi possível excluir.');throw e}}
 async function saveCfg(c){CFG=Object.assign({},CFG,c);try{await ref('config/geral').set(CFG)}catch(e){toast('Não foi possível salvar a configuração.');throw e}}
-async function uploadAnexo(file){
-  const path=`${ROOT}/anexos/${Date.now()}_${file.name.replace(/[^\w.\-]+/g,'_')}`;
-  const snap=await firebase.storage().ref(path).put(file,{contentType:file.type});
-  const url=await snap.ref.getDownloadURL();return {id:path,url,nome:file.name,tipo:file.type};
+const fileToB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(f)});
+async function uploadAnexo(file,onProg){
+  const id=uid(),b64=await fileToB64(file),CH=900000,n=Math.ceil(b64.length/CH)||1;
+  for(let i=0;i<n;i++){await ref(`arquivos/${id}/p/${i}`).set(b64.slice(i*CH,(i+1)*CH));onProg&&onProg(i+1,n)}
+  await ref(`arquivos/${id}/meta`).set({nome:file.name,tipo:file.type||'application/octet-stream',tam:file.size,partes:n,em:nowISO(),por:ME||''});
+  return {id,url:`${APP_URL}?arquivo=${id}`,nome:file.name,tipo:file.type,db:true};
+}
+async function abrirArquivo(id){
+  document.body.innerHTML=`<div style="font:16px Jost,Arial,sans-serif;color:#2d2b24;background:#f2ede5;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:30px 16px"><div style="letter-spacing:.24em;font-size:18px;margin-bottom:4px">ABSOLUTA</div><div style="font-size:12px;letter-spacing:.3em;color:#8b8576;margin-bottom:24px">ARQUITETURA · COMPRAS</div><div id="arqbox" style="width:100%;max-width:1100px;text-align:center">Carregando arquivo…</div></div>`;
+  try{firebase.initializeApp(FB_CONFIG)}catch(e){}
+  const box=document.getElementById('arqbox');
+  try{
+    const m=(await firebase.database().ref(`${ROOT}/arquivos/${id}/meta`).once('value')).val();
+    if(!m){box.textContent='Arquivo não encontrado.';return}
+    const ps=(await firebase.database().ref(`${ROOT}/arquivos/${id}/p`).once('value')).val()||{};
+    const b64=Array.from({length:m.partes},(_,i)=>ps[i]||'').join('');
+    const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([u8],{type:m.tipo}));
+    const isImg=/^image\//.test(m.tipo),isPdf=/pdf/.test(m.tipo);
+    box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;text-align:left"><b style="font-weight:500;font-size:18px">${esc(m.nome)}</b><a href="${url}" download="${esc(m.nome)}" style="background:#5f5e42;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px">Baixar arquivo</a></div>
+      ${isPdf?`<iframe src="${url}" style="width:100%;height:80vh;border:1px solid #e5ddcf;border-radius:12px;background:#fff"></iframe>`:isImg?`<img src="${url}" style="max-width:100%;border-radius:12px">`:'<p>Clique em “Baixar arquivo” para abrir.</p>'}`;
+  }catch(e){box.textContent='Não foi possível abrir o arquivo ('+(e&&e.code||'erro')+').'}
 }
 
 /* ---------- render ---------- */
@@ -1211,6 +1234,8 @@ $('#modal').addEventListener('click',async e=>{
   if(e.target.closest('[data-goverba]')){closeModal();UI.view='orcamento';saveUI();render();return}
   const cm=e.target.closest('[data-copymsg]');
   if(cm){if(MODAL_CTX)copyText(MODAL_CTX.msg(readForm(MODAL_CTX.spec,$('#mform'))));return}
+  if(e.target.closest('[data-mailrich]')){copyRich();return}
+  if(e.target.closest('[data-mailopen2]')){openMailto();return}
   const mo=e.target.closest('[data-mailopen]');
   if(mo){const c=MODAL_CTX;if(c&&c.mail){const to=$('#mto').value.trim(),su=$('#msub').value,bo=$('#mbody').value;mo.href=`mailto:${encodeURIComponent(to).replace(/%40/g,'@').replace(/%2C/gi,',')}?subject=${encodeURIComponent(su)}&body=${encodeURIComponent(bo)}`;c.mail.onOpen&&c.mail.onOpen();toast('Abrindo seu e-mail… se não abrir, use “Copiar”.')}return}
   const mc=e.target.closest('[data-mailcopy]');
@@ -1227,62 +1252,123 @@ $('#modal').addEventListener('click',async e=>{
 
 function markMissing(f){F_SOL.forEach(x=>{if(!x.req)return;const el=f.querySelector(`[name="${x.k}"]`);if(el){const v=el.value.trim();el.classList.toggle('miss',!v);}});const first=f.querySelector('.miss');if(first){first.scrollIntoView({block:'center'});first.focus()}}
 /* ---------- e-mail ---------- */
-function openMail({title,subject,body,onOpen}){
-  MODAL_CTX={mail:{onOpen}};
-  MB=[{l:'Copiar',fn:()=>{}},{l:'Fechar',cls:'ghost',fn:closeModal}];
+/* modelo de e-mail: blocos -> texto simples e HTML */
+const LN='────────────────────────────────';
+function mailText(d){
+  const L=[d.saud,'',d.intro,''];
+  d.blocks.forEach(b=>{
+    L.push(LN,b.h.toUpperCase(),LN);
+    if(b.rows)b.rows.filter(r=>r[1]!=null&&r[1]!=='').forEach(([k,v])=>L.push(`${k}: ${v}`));
+    if(b.table){b.table.rows.forEach((r,i)=>L.push(`${i+1}. `+r.filter(Boolean).join('  |  ')))}
+    if(b.steps)b.steps.forEach((t,i)=>L.push(`${i+1}. ${t}`));
+    if(b.text)L.push(b.text);
+    L.push('');
+  });
+  L.push(`Acompanhe no sistema: ${APP_URL}`,'','Obrigada!',`${meNome()} — Arquitetura · Absoluta`);
+  return L.join('\n');
+}
+function mailHtml(d){
+  const E=v=>esc(v).replace(/\n/g,'<br>');
+  const th='font:600 11px Arial,sans-serif;color:#8a6f4d;text-transform:uppercase;letter-spacing:1px;padding:16px 0 6px;border-bottom:2px solid #6b6a4c';
+  const td1='font:13px Arial,sans-serif;color:#6b6557;padding:7px 14px 7px 0;vertical-align:top;white-space:nowrap;width:170px;border-bottom:1px solid #eee7da';
+  const td2='font:14px Arial,sans-serif;color:#2d2b24;padding:7px 0;vertical-align:top;border-bottom:1px solid #eee7da';
+  let h=`<div style="font:14px Arial,sans-serif;color:#2d2b24;max-width:680px"><p style="margin:0 0 6px">${E(d.saud)}</p><p style="margin:0 0 14px">${E(d.intro)}</p>`;
+  d.blocks.forEach(b=>{
+    const box=b.hl?'background:#f4efe4;border:1px solid #e3d8c2;border-radius:8px;padding:4px 16px 10px;margin:8px 0 14px':'margin:0 0 12px';
+    h+=`<div style="${box}"><div style="${th}${b.hl?';border-bottom-color:#a98b66':''}">${E(b.h)}</div>`;
+    if(b.rows)h+=`<table style="border-collapse:collapse;width:100%">${b.rows.filter(r=>r[1]!=null&&r[1]!=='').map(([k,v])=>`<tr><td style="${td1}">${E(k)}</td><td style="${td2}${/prioridade|prazo/i.test(k)&&/URGENTE|ALTA/.test(v)?';color:#a8473a;font-weight:bold':''}">${/^https?:\/\//.test(v)?`<a href="${esc(v)}">${E(v)}</a>`:E(v)}</td></tr>`).join('')}</table>`;
+    if(b.table)h+=`<table style="border-collapse:collapse;width:100%;margin-top:6px"><tr>${['#',...b.table.head].map(x=>`<th style="font:600 12px Arial,sans-serif;color:#fff;background:#6b6a4c;padding:7px 9px;text-align:left">${E(x)}</th>`).join('')}</tr>${b.table.rows.map((r,i)=>`<tr style="background:${i%2?'#faf7f1':'#fff'}"><td style="${td2};padding:7px 9px">${i+1}</td>${r.map(x=>`<td style="${td2};padding:7px 9px">${E(x||'—')}</td>`).join('')}</tr>`).join('')}</table>`;
+    if(b.steps)h+=`<ol style="margin:8px 0 0 18px;padding:0;font:14px Arial,sans-serif">${b.steps.map(t=>`<li style="margin:4px 0">${E(t)}</li>`).join('')}</ol>`;
+    if(b.text)h+=`<p style="margin:8px 0 0">${E(b.text)}</p>`;
+    h+='</div>';
+  });
+  h+=`<p style="margin:16px 0 4px">Acompanhe no sistema: <a href="${esc(APP_URL)}">${esc(APP_URL)}</a></p><p style="margin:14px 0 0">Obrigada!<br><b>${E(meNome())}</b> — Arquitetura · Absoluta</p></div>`;
+  return h;
+}
+function openMail({title,subject,doc,onOpen}){
+  const body=mailText(doc),html=mailHtml(doc);
+  MODAL_CTX={mail:{onOpen,html,text:body}};
+  MB=[];
   const m=$('#modal');
-  m.innerHTML=`<div class="sheet"><div class="mh"><div><div class="mt">${esc(title)}</div><div class="ms">Revise e envie para o setor de compras</div></div><button class="x" data-close>×</button></div>
+  m.innerHTML=`<div class="sheet" style="max-width:820px"><div class="mh"><div><div class="mt">${esc(title)}</div><div class="ms">Revise e envie para o setor de compras</div></div><button class="x" data-close>×</button></div>
    <form class="mb" id="mform" novalidate>
     <div class="mailto"><span>Para</span><input id="mto" value="${esc(CFG.emailCompras||EMAIL_PADRAO)}">
     <span>Assunto</span><input id="msub" value="${esc(subject)}"></div>
-    <textarea id="mbody" class="mailbody">${esc(body)}</textarea>
-    ${MAIL_ANX.length?`<div class="note">📎 Os links dos anexos já vão no texto. Se preferir anexar o arquivo: ${MAIL_ANX.map(a=>`<a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(' · ')}</div>`:''}
+    <div class="mprev">${html}</div>
+    <details class="mdet"><summary>Ver / editar como texto simples (é o que vai pelo “Abrir no e-mail”)</summary><textarea id="mbody" class="mailbody">${esc(body)}</textarea></details>
+    ${MAIL_ANX.length?`<div class="note">📎 Os links dos anexos já vão no e-mail. Se preferir anexar o arquivo: ${MAIL_ANX.map(a=>`<a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(' · ')}</div>`:''}
+    <div class="hint" style="margin:12px 0 0"><b>Dica:</b> “Copiar e-mail formatado” e colar no Outlook/Gmail mantém as tabelas e negritos. “Abrir no e-mail” abre um rascunho em texto simples.</div>
    </form>
-   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button><button type="button" class="btn" data-mailcopy>Copiar texto</button><a class="btn pri" data-mailopen href="#" target="_top" rel="noopener">✉ Abrir no e-mail</a></div></div>`;
+   <div class="mf"><button type="button" class="btn ghost" data-close>Fechar</button><button type="button" class="btn" data-mailopen2>✉ Abrir no e-mail</button><button type="button" class="btn pri" data-mailrich>Copiar e-mail formatado</button></div></div>`;
   m.classList.remove('hidden');document.body.classList.add('noscroll');
 }
-function solMailBlock(s){
-  const L=[`${s.numero||'Nova solicitação'} — ${s.item||''}`];
-  const add=(k,v)=>{if(v!=null&&v!=='')L.push(`${k}: ${v}`)};
-  add('1. Quantidade',qtdTxt(s));
-  add('2. Modelo / referência',join([s.modelo,s.marca],' · '));
-  add('3. Cor e características',s.acabamento);
-  add('4. Medidas e dimensões',s.dimensoes);
-  const pj=[s.referencia,...(s.anexos||[]).map(a=>`${a.nome}: ${a.url}`)].filter(Boolean);
-  add('5. Projeto / desenho técnico',pj.join(' · '));
-  add('6. Demais informações',s.especificacao);
-  add('Ambiente / aplicação',join([s.local,s.categoria]));
-  add('Fornecedor indicado',join([s.fornecedor,s.contato,s.telefone,s.email]));
-  add('Outras indicações',s.fornecedoresAlt);
-  add('Necessário em obra',s.dataNecessaria?fmtDY(s.dataNecessaria):'');
-  if(s.prioridade&&s.prioridade!=='Normal')add('Prioridade',s.prioridade.toUpperCase());
-  return L.join('\n');
+async function copyRich(){
+  const c=MODAL_CTX&&MODAL_CTX.mail;if(!c)return;
+  const txt=$('#mbody').value;
+  try{
+    await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([c.html],{type:'text/html'}),'text/plain':new Blob([txt],{type:'text/plain'})})]);
+    c.onOpen&&c.onOpen();toast('E-mail copiado! Cole no Outlook/Gmail. Assunto: '+$('#msub').value.slice(0,60)+'…');
+  }catch(e){copyText(txt)}
 }
+function openMailto(){
+  const c=MODAL_CTX&&MODAL_CTX.mail;if(!c)return;
+  const to=$('#mto').value.trim(),su=$('#msub').value,bo=$('#mbody').value;
+  c.onOpen&&c.onOpen();
+  location.href=`mailto:${to}?subject=${encodeURIComponent(su)}&body=${encodeURIComponent(bo)}`;
+}
+const prazoTxt=s=>{const d=s.dataNecessaria||(s.cronId&&byId('cronograma',s.cronId)&&dataEf(byId('cronograma',s.cronId)));return d?fmtDY(d):''};
+function solRows(s){
+  return {o:[['Produto',s.item],['Quantidade',qtdTxt(s)],['Modelo / referência',join([s.modelo,s.marca],' · ')],['Cor e características',s.acabamento],['Medidas',s.dimensoes],['Ambiente / aplicação',join([s.local,s.categoria],' · ')]],
+    pj:[['Link do projeto',s.referencia],...(s.anexos||[]).map(a=>['Anexo: '+a.nome,a.url])],
+    obs:s.especificacao,
+    f:[['Fornecedor',s.fornecedor],['Contato',s.contato],['Telefone / WhatsApp',s.telefone],['E-mail',s.email],['Outras indicações',s.fornecedoresAlt]]};
+}
+function solBlocks(s,withResumo){
+  const r=solRows(s),B=[];
+  if(withResumo)B.push({h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(s.obra)],['Solicitação',s.numero],['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],['Solicitante',s.solicitante||meNome()]]});
+  B.push({h:withResumo?'O que comprar':`${s.numero} — ${s.item}`,rows:withResumo?r.o:[['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],...r.o]});
+  if(r.pj.some(x=>x[1]))B.push({h:withResumo?'Projeto / desenho técnico':'Projeto',rows:r.pj});
+  if(r.obs)B.push({h:'Informações importantes',text:r.obs});
+  if(r.f.some(x=>x[1]))B.push({h:'Fornecedor indicado',rows:r.f});
+  return B;
+}
+const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e pedir orçamento exatamente com estas especificações.','Retornar valor total, prazo de entrega e condição de pagamento — pode responder este e-mail ou registrar no sistema.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
 function mailSol(s){
   if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes de enviar: '+faltando(s).join(', '));return}
-  const nome=obraNomeCod(s.obra);
   MAIL_ANX=(s.anexos||[]);
-  openMail({title:'Enviar solicitação',subject:`[Compras Arq] ${nome} · ${s.numero} · ${s.item}`,
-    body:`Olá, equipe de compras!\n\nSegue solicitação de compra de arquitetura — obra ${nome}:\n\n${solMailBlock(s)}\n\nSolicitante: ${s.solicitante||meNome()}\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
+  const pz=prazoTxt(s);
+  openMail({title:'Enviar solicitação',subject:`[COMPRAS ARQ] ${obraCod(s.obra)||obraNome(s.obra)} | ${s.numero} | ${s.item}${pz?' | em obra até '+pz.slice(0,5):''}${s.prioridade&&s.prioridade!=='Normal'?' | '+s.prioridade.toUpperCase():''}`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Segue uma nova solicitação de compra da Arquitetura para a obra ${obraNomeCod(s.obra)}.`,
+      blocks:[...solBlocks(s,true),{h:'O que precisamos de você',steps:PASSOS_SOL}]},
     onOpen:()=>{if(canWrite)patch('solicitacoes',s.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
 let MAIL_ANX=[],VB_OK=null;
 function mailBatch(){
   const arr=S.solicitacoes.filter(s=>s.obra===UI.obra&&s.status==='nova');
   const ok=arr.filter(s=>!faltando(s).length),inc=arr.length-ok.length;
-  const pend=ok.filter(s=>!s.emailEm);const list=pend.length?pend:ok;
+  const pend=ok.filter(s=>!s.emailEm);const list=(pend.length?pend:ok).sort((a,b)=>(prazoTxt(a)?(a.dataNecessaria||''):'9').localeCompare(prazoTxt(b)?(b.dataNecessaria||''):'9'));
   if(!list.length){toast('Nenhuma solicitação completa para enviar — confira o checklist.');return}
   if(inc)setTimeout(()=>toast(`${inc} incompleta${inc>1?'s':''} ficou de fora do e-mail.`),300);
-  const nome=obraNomeCod(UI.obra);
   MAIL_ANX=list.flatMap(s=>s.anexos||[]);
-  openMail({title:`Enviar ${list.length} solicitaç${list.length>1?'ões':'ão'}`,subject:`[Compras Arq] ${nome} · ${list.length} nova${list.length>1?'s':''} solicitaç${list.length>1?'ões':'ão'}`,
-    body:`Olá, equipe de compras!\n\nSeguem as novas solicitações de compra de arquitetura — obra ${nome}:\n\n${list.map((s,i)=>`${i+1}) ${solMailBlock(s)}`).join('\n\n')}\n\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
+  const n=list.length;
+  const blocks=[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(UI.obra)],['Quantidade de solicitações',String(n)],['Solicitante',meNome()]]},
+    {h:'Lista de solicitações',table:{head:['Nº','Produto','Qtd','Em obra até','Prioridade'],rows:list.map(s=>[s.numero,s.item,qtdTxt(s),prazoTxt(s),s.prioridade||'Normal'])}}];
+  list.forEach(s=>blocks.push(...solBlocks(s,false)));
+  blocks.push({h:'O que precisamos de você',steps:PASSOS_SOL});
+  openMail({title:`Enviar ${n} solicitaç${n>1?'ões':'ão'}`,subject:`[COMPRAS ARQ] ${obraCod(UI.obra)||obraNome(UI.obra)} | ${n} nova${n>1?'s':''} solicitaç${n>1?'ões':'ão'} de compra`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Seguem ${n} novas solicitações de compra da Arquitetura para a obra ${obraNomeCod(UI.obra)}. A lista abaixo está em ordem de prazo.`,blocks},
     onOpen:async()=>{if(!canWrite)return;for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}}});
 }
 function mailReq(r){
   const sol=r.solId&&byId('solicitacoes',r.solId);MAIL_ANX=(sol&&sol.anexos)||[];
-  openMail({title:'Enviar requisição',subject:`[Compras Arq] ${obraNomeCod(r.obra)} · ${r.numero} · ${r.item} · ${r.fornecedor||''}`,
-    body:`Olá, equipe de compras!\n\nSegue requisição para emissão do pedido:\n\n${reqText(r)}\n\nAcompanhe no sistema: ${APP_URL}\n\nObrigada!\n${meNome()} — Arquitetura · Absoluta`,
+  openMail({title:'Enviar requisição',subject:`[COMPRAS ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item} | ${r.fornecedor||''} | EMITIR PEDIDO`,
+    doc:{saud:'Olá, equipe de compras!',intro:`A compra abaixo foi aprovada pela Arquitetura. Por favor, emitir o pedido.`,
+      blocks:[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(r.obra)],['Requisição',r.numero],['Ref. solicitação',r.solNumero],['Valor total',money(r.valorTotal)],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):'']]},
+        {h:'Item',rows:[['Produto',r.item],['Quantidade',qtdTxt(r)],['Ambiente / aplicação',r.local],['Especificação',r.especificacao]]},
+        {h:'Fornecedor',rows:[['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',r.contato],['Telefone',r.telefone],['E-mail',r.email]]},
+        {h:'Condições',rows:[['Valor total',money(r.valorTotal)],['Pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto]]},
+        ...(r.obs?[{h:'Observações',text:r.obs}]:[]),
+        {h:'O que precisamos de você',steps:['Emitir o pedido de compra no sistema (ERP) com os dados acima.','Informar o nº do pedido e confirmar a data de entrega — pode responder este e-mail.']}]},
     onOpen:()=>{if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
 
@@ -1409,15 +1495,17 @@ function openSol(s,cron,target){
     sub:esc(join([obraNomeCod(s.obra),cron?'a partir do cronograma':''])),
     body:flow+tools+`<div class="ckl" id="ckl"></div><div id="vbw"></div>`+formHTML(F_SOL,s)+hist,buttons:b});
   MODAL_CTX={spec:F_SOL,msg:v=>quoteMsg(Object.assign({},s,v,{anexos:MODAL_CTX.anexos})),anexos:(s.anexos||[]).slice()};
+  MODAL_CTX.autosave=isNew?null:async()=>{await patch('solicitacoes',s.id,{anexos:MODAL_CTX.anexos})};
   const upd=()=>{const v=Object.assign({},s,readForm(F_SOL,$('#mform')),{anexos:MODAL_CTX.anexos});const vb=$('#vbw');if(vb)vb.innerHTML=verbaBox(s.obra,v.categoria,v.cotValor,s.id);$('#ckl').innerHTML=`<span class="ckt">Checklist da cotação</span>`+checkOf(v).map(c=>`<span class="ck ${c.ok?'ok':c.opc?'opc':'no'}">${c.ok?'✓':c.opc?'○':'!'} ${c.l}</span>`).join('')};
   const drawAnx=()=>{$('#anx').innerHTML=MODAL_CTX.anexos.map((a,i)=>`<div class="ax"><a href="${esc(a.url||('/_blob/'+a.id))}" target="_blank" rel="noopener">📄 ${esc(a.nome||'arquivo')}</a>${canWrite?`<button type="button" class="ib" data-rmanx="${i}" title="Remover">×</button>`:''}</div>`).join('');upd()};
   drawAnx();
   $('#mform').addEventListener('input',upd);$('#mform').addEventListener('change',upd);
-  $('#anx').addEventListener('click',e=>{const r=e.target.closest('[data-rmanx]');if(r){MODAL_CTX.anexos.splice(+r.dataset.rmanx,1);drawAnx()}});
+  $('#anx').addEventListener('click',e=>{const r=e.target.closest('[data-rmanx]');if(r){MODAL_CTX.anexos.splice(+r.dataset.rmanx,1);drawAnx();MODAL_CTX.autosave&&MODAL_CTX.autosave()}});
   const sf=$('#sfile');if(sf)sf.onchange=async e=>{
     const files=[...e.target.files];e.target.value='';if(!files.length)return;
-    for(const fl of files){if(fl.size>20*1024*1024){toast(fl.name+' passa de 20 MB');continue}toast('Enviando '+fl.name+'…');try{MODAL_CTX.anexos.push(await uploadAnexo(fl));drawAnx()}catch(x){toast('Não foi possível anexar '+fl.name+' ('+(x&&x.code||'erro')+')')}}
-    toast('Anexo pronto — lembre de Salvar.');
+    for(const fl of files){if(fl.size>15*1024*1024){toast(fl.name+' passa de 15 MB — envie pelo link do Drive');continue}toast('Enviando '+fl.name+'…');try{MODAL_CTX.anexos.push(await uploadAnexo(fl,(i,n)=>toast(`Enviando ${fl.name}… ${Math.round(i/n*100)}%`)));drawAnx();
+      const sv=MODAL_CTX&&MODAL_CTX.autosave;if(sv)await sv()}catch(x){console.error(x);toast('Não foi possível anexar '+fl.name+' ('+(x&&x.code||x&&x.message||'erro')+')')}}
+    toast(MODAL_CTX&&MODAL_CTX.autosave?'Anexo salvo ✓':'Anexo pronto — clique em Salvar para guardar a solicitação.');
   };
   if(target){const el=$('#mform [name=cotValor]');if(el){el.scrollIntoView({block:'center'});el.focus()}}
 }
