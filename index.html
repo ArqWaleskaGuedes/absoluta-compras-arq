@@ -372,6 +372,7 @@ input.cell[type=date]{font-size:13.5px}
 .pgt{flex:1;min-width:180px}
 .pgt b{font-weight:500;font-size:16.5px;display:block}
 .pgt small{font-size:13px;color:var(--mut)}
+.pgt small b{display:inline !important;font-size:inherit !important}
 .pgt small .r,.gi .r{color:var(--red);font-weight:500}
 .pgd{text-align:right;min-width:96px}
 .pgd small{display:block;font-size:11.5px;color:var(--mut)}
@@ -399,6 +400,28 @@ input.cell[type=date]{font-size:13.5px}
 .mdet{margin-top:12px;font-size:13.5px;color:#5c5749}
 .mdet summary{cursor:pointer;padding:4px 0}
 .mdet .mailbody{margin-top:8px}
+.pflow-w{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 12px;margin:0 0 14px;box-shadow:var(--sh)}
+.pflow-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 2px 12px}
+.pflow-h b{font-weight:500;font-size:17px}
+.pflow-h small{font-size:12.5px;color:var(--mut)}
+.pflow{display:flex;align-items:stretch;overflow-x:auto;padding-bottom:4px}
+.pcol{flex:1 1 0;min-width:170px;background:#f7f2ea;border-radius:12px;border-top:4px solid var(--c);display:flex;flex-direction:column}
+.pch{display:flex;align-items:center;gap:10px;padding:10px 10px 8px}
+.pcn{flex:none;width:30px;height:30px;border-radius:9px;background:var(--c);color:#fff;display:grid;place-items:center;font-weight:500}
+.pch b{display:block;font-weight:500;font-size:14.5px;line-height:1.15}
+.pch small{font-size:11.5px;color:var(--mut)}
+.pcards{display:flex;flex-direction:column;gap:6px;padding:0 8px 10px;max-height:236px;overflow-y:auto}
+.pcard{text-align:left;background:#fffdf9;border:1px solid var(--line);border-left:3px solid var(--c);border-radius:9px;padding:7px 9px;cursor:pointer;font-family:inherit;color:var(--ink);transition:.12s}
+.pcard:hover{box-shadow:0 4px 12px rgba(60,50,30,.12);transform:translateY(-1px)}
+.pcard b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard small{display:block;font-size:11.5px;color:var(--mut);margin-top:1px}
+.pcard small .r{color:var(--red);font-weight:500}
+.pbar{display:block;height:3px;background:#ece6db;border-radius:3px;margin-top:5px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--c)}
+.pempty{color:#bdb4a2;text-align:center;padding:10px 0;font-size:13px}
+.psem{font-size:13px;color:var(--mut);margin:10px 2px 0}
+.pg.flash{box-shadow:0 0 0 3px #c9a24a}
+@media (max-width:860px){.pcol{min-width:200px}}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -884,7 +907,7 @@ function renderObra(){
       ${semEtapas&&canWrite?`<div class="etb">📅 Informe as <b>etapas da obra</b> (alvenaria, acabamentos e entrega) para o sistema calcular quando pedir cada item e montar a linha do tempo. <button class="btn sm pri" data-editobra>Informar etapas</button></div>`:''}
       <div class="toolbar"><input type="search" id="q" placeholder="Buscar nesta área…" value="${esc(UI.q)}">
       <div class="vsw"><button class="${UI.cview==='prio'?'on':''}" data-cview="prio">${ico('list')} Prioridades</button><button class="${UI.cview==='timeline'?'on':''}" data-cview="timeline">${ico('cal')} Linha do tempo</button><button class="${UI.cview==='planilha'?'on':''}" data-cview="planilha">${ico('grid')} Planilha</button></div></div>
-      ${flowChart(crO.filter(c=>areaOf(c)===UI.area))}`;
+      ${prioFlow(crO.filter(c=>areaOf(c)===UI.area))}`;
     if(UI.cview==='prio')tb+=`<div class="hint">Ordem de compra sugerida: primeiro o que precisa ser pedido antes (data limite e prazo do fornecedor). Itens marcados como <b>Urgente</b> ou <b>Alta</b> sobem para o topo. ≈ = data estimada pela etapa da obra.</div>`;
     else if(UI.cview==='timeline')tb+=`<div class="hint">Barra = do <b>dia limite para pedir</b> até a <b>data em obra</b> (◆). Barra tracejada = data estimada pela etapa da obra.</div>`;
     else if(canWrite)tb+=`<div class="hint">Edite direto na célula. Para incluir, digite na última linha e tecle <b>Enter</b> (ou cole linhas do Excel). Datas e prazos em branco usam a estimativa.</div>`;
@@ -1011,12 +1034,37 @@ function flowChart(cr){
     ${k==='pedir'&&(late||soon)?`<em class="${late?'r':''}">${late?late+' atrasado'+(late>1?'s':''):''}${late&&soon?' · ':''}${soon?soon+' esta semana':''}</em>`:'<em>&nbsp;</em>'}</button>`).join('')}</div>
   ${UI.stage?`<div class="hint">Mostrando só <b>${STAGES.find(x=>x[0]===UI.stage)[1]}</b> · <button class="lnk" data-stage="${UI.stage}" style="text-decoration:underline">mostrar todos</button></div>`:''}`;
 }
+const gid=g=>catKey(g)||'x';
+const BUCKETS=[['ja','Definir já','atrasado ou até 15 dias','#b5654f'],['m30','Próximos 30 dias','de 16 a 45 dias','#c98b3f'],['m90','Próximos 90 dias','de 46 a 135 dias','#a99a5c'],['dep','Depois','mais de 135 dias','#9c9686'],['ok','Definidos','todos os subitens já solicitados','#4f5638']];
+function bucketOf(items){
+  const pend=items.filter(c=>stageOf(c)==='pedir');
+  if(!pend.length)return {b:'ok',lim:null,pend:0};
+  const lims=pend.map(limite).filter(Boolean).sort();
+  if(!lims.length)return {b:'sem',lim:null,pend:pend.length};
+  const d=daysTo(lims[0]);
+  return {b:d<=15?'ja':d<=45?'m30':d<=135?'m90':'dep',lim:lims[0],d,pend:pend.length};
+}
+function prioFlow(arr){
+  if(!arr.length)return '';
+  const G=grouped(arr).map(x=>Object.assign(x,bucketOf(x.items)));
+  const sem=G.filter(x=>x.b==='sem');
+  const arrow='<svg class="farr" viewBox="0 0 34 20"><path d="M2 10h26M22 4l7 6-7 6"/></svg>';
+  const cols=BUCKETS.map(([k,l,sub,c],i)=>{
+    const list=G.filter(x=>x.b===k).sort((a,b)=>String(a.lim||'').localeCompare(String(b.lim||'')));
+    return `${i?arrow:''}<div class="pcol" style="--c:${c}"><div class="pch"><span class="pcn">${list.length}</span><div><b>${l}</b><small>${sub}</small></div></div>
+      <div class="pcards">${list.length?list.map(x=>{const tot=x.items.length,def=tot-x.pend;return `<button class="pcard" data-jump="${esc(x.g)}" title="${esc(x.g)} — ${def}/${tot} definidos"><b>${esc(x.g)}</b>
+        <small>${k==='ok'?'✓ tudo solicitado':(x.d<0?`<span class="r">atrasado ${-x.d}d</span>`:'pedir até '+fmtD(x.lim))+` · ${def}/${tot}`}</small><i class="pbar"><i style="width:${Math.round(def/tot*100)}%"></i></i></button>`}).join(''):'<div class="pempty">—</div>'}</div></div>`;
+  }).join('');
+  return `<div class="pflow-w"><div class="pflow-h"><b>Mapa de prioridades</b><small>o que precisa ser definido primeiro${G.some(x=>x.lim&&estimado(x.items.find(c=>limite(c)===x.lim)||{}))?' · datas com ≈ são estimadas pela etapa da obra':''}</small></div>
+    <div class="pflow">${cols}</div>
+    ${sem.length?`<div class="psem">Sem data (${sem.length}): ${sem.map(x=>`<button class="lnk" data-jump="${esc(x.g)}">${esc(x.g)}</button>`).join(' · ')}${canWrite?' — <button class="lnk" data-editobra style="text-decoration:underline">informar etapas da obra</button>':''}</div>`:''}</div>`;
+}
 function emptyArea(){return `<div class="empty"><b>${UI.q||UI.stage?'Nada com esses filtros':'Nenhum item nesta área'}</b>${UI.q||UI.stage?'':'Use “Novo item” ou a Planilha (dá para colar do Excel).'}</div>`}
 const stPill=c=>{const k=stageOf(c),cs=cronStatus(c);return k==='pedir'&&(cs.k==='late'||cs.k==='soon')?`<span class="pill p-${cs.k}">${esc(cs.l)}</span>`:`<span class="pill" style="background:${STC[k]};color:${['pedir','solicitado'].includes(k)?'#3e3b31':'#fff'}">${STAGES.find(s=>s[0]===k)[1]}</span>`};
 function cronPrio(){
   const arr=cronFiltered();if(!arr.length)return emptyArea();
   return `<div class="plist">${grouped(arr).map(({g,items,tipo},gi)=>{const inf=grpInfo(items),op=isOpen(g);
-    return `<div class="pg ${inf.late?'late':''}"><div class="pgh" data-tog="${esc(g)}"><span class="rk">${gi+1}</span>
+    return `<div class="pg ${inf.late?'late':''}" id="g-${esc(gid(g))}"><div class="pgh" data-tog="${esc(g)}"><span class="rk">${gi+1}</span>
       <div class="pgt"><b>${esc(g)}</b><small>${tipo==='geral'?'Compra geral':'Ambiente'} · ${inf.n} ${inf.n===1?'subitem':'subitens'}${inf.done?` · ${inf.done} comprado${inf.done>1?'s':''}`:''}${inf.late?` · <b class="r">${inf.late} atrasado${inf.late>1?'s':''}</b>`:''}</small></div>
       <div class="pgd">${inf.first?`<small>pedir a partir de</small><b>${fmtD(inf.first)}</b>`:'<small>sem data</small>'}</div>
       <div class="pgb"><i style="width:${Math.round(inf.done/inf.n*100)}%"></i></div>
@@ -1656,7 +1704,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1666,6 +1714,7 @@ document.addEventListener('click',e=>{
   if('editobra' in d)return openObra(obraById(UI.obra));
   if(d.obra){UI.obra=d.obra;UI.q='';UI.gq='';if($('#gq'))$('#gq').value='';saveUI();render();window.scrollTo(0,0);return}
   if(d.view){UI.view=d.view;UI.q='';saveUI();render();return}
+  if(d.jump!=null){const g=d.jump;CLOSED.delete(UI.obra+'::'+UI.area+'::'+g);saveClosed();UI.stage='';UI.q='';if(UI.cview!=='prio'){UI.cview='prio';saveUI();render()}else renderItems();setTimeout(()=>{const el=document.getElementById('g-'+gid(g));if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}},60);return}
   if(d.area){UI.area=d.area;UI.q='';UI.stage='';saveUI();render();return}
   if(d.addgrp!=null){e.stopPropagation();const[tp,...rest]=d.addgrp.split('|');const g=rest.join('|');openCron(null,tp==='geral'?{categoria:g,tipo:'geral'}:{local:g,tipo:'ambiente'});return}
   if(d.tog!=null){const k=UI.obra+'::'+UI.area+'::'+d.tog;CLOSED.has(k)?CLOSED.delete(k):CLOSED.add(k);saveClosed();renderItems();return}
