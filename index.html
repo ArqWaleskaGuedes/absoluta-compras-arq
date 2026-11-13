@@ -1639,7 +1639,7 @@ async function xlsLib(){if(!window.ExcelJS)await loadScript('lib/exceljs.min.js'
 const OL='FF5F5E42',SAND='FFF4EFE4',YEL='FFFFF4CC',LINE='FFD9CFBC';
 const brd={top:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:LINE}},bottom:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}};
 function xlsHeader(ws,titulo,info,ncols){
-  ws.mergeCells(1,1,1,ncols);const t=ws.getCell(1,1);t.value='ABSOLUTA CONSTRUTORA · ARQUITETURA';t.font={bold:true,size:11,color:{argb:'FF8A6F4D'}};
+  ws.mergeCells(1,1,1,ncols);const t=ws.getCell(1,1);t.value='ABSOLUTA CONSTRUTORA';t.font={bold:true,size:11,color:{argb:'FF8A6F4D'}};
   ws.mergeCells(2,1,2,ncols);const h=ws.getCell(2,1);h.value=titulo;h.font={bold:true,size:16,color:{argb:OL}};ws.getRow(2).height=24;
   let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};r++});
   return r+1;
