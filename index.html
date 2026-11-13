@@ -1641,7 +1641,7 @@ const brd={top:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:L
 function xlsHeader(ws,titulo,info,ncols){
   ws.mergeCells(1,1,1,ncols);const t=ws.getCell(1,1);t.value='ABSOLUTA CONSTRUTORA';t.font={bold:true,size:11,color:{argb:'FF8A6F4D'}};
   ws.mergeCells(2,1,2,ncols);const h=ws.getCell(2,1);h.value=titulo;h.font={bold:true,size:16,color:{argb:OL}};ws.getRow(2).height=24;
-  let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};if(/^(Onde será usado|Observações)$/.test(k)){a.fill=b.fill={type:'pattern',pattern:'solid',fgColor:{argb:YEL}};b.font={bold:k!=='Observações'};a.font={bold:true,color:{argb:OL}};ws.getRow(r).height=Math.max(20,Math.ceil(String(v).length/70)*16)}r++});
+  let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};if(String(v).length>70)ws.getRow(r).height=Math.ceil(String(v).length/70)*15;r++});
   return r+1;
 }
 function xlsTable(ws,r0,cols,rows,opts={}){
