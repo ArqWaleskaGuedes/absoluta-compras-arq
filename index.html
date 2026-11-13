@@ -598,7 +598,7 @@ function checkOf(o){return CHECK.map(([k,l])=>{const v=k==='projeto'?(o.referenc
 const faltando=o=>{if(o.tipo==='lista'){const L=(o.itens||[]).filter(l=>l.nome),m=[];if(!o.categoria)m.push('Categoria');if(!L.length)m.push('Materiais');else if(L.some(l=>!l.qtd))m.push('Quantidades');return m}return checkOf(o).filter(c=>!c.ok&&!c.opc).map(c=>c.l)};
 const F_REQ=[
  {s:'Item'},
- {k:'item',l:'Item',req:1,w:2},{k:'referencia',l:'Referência do produto (modelo / código do fabricante)',w:2,ph:'ex.: Deca 2875.C.EXP · cód. 1234567'},{k:'especificacao',l:'Especificação',t:'area',w:2},
+ {k:'item',l:'Item',req:1,w:2},{k:'local',l:'Onde será usado (aparece no Excel)',w:2,ph:'Ex.: Finalização da pintura no térreo e unidades'},{k:'referencia',l:'Referência do produto (modelo / código do fabricante)',w:2,ph:'ex.: Deca 2875.C.EXP · cód. 1234567'},{k:'especificacao',l:'Especificação',t:'area',w:2},
  {k:'qtd',l:'Quantidade',t:'number'},{k:'un',l:'Unidade',t:'select',o:UNS},
  {s:'Fornecedor'},
  {k:'fornecedor',l:'Fornecedor',req:1},{k:'cnpj',l:'CNPJ'},
@@ -1641,7 +1641,7 @@ const brd={top:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:L
 function xlsHeader(ws,titulo,info,ncols){
   ws.mergeCells(1,1,1,ncols);const t=ws.getCell(1,1);t.value='ABSOLUTA CONSTRUTORA';t.font={bold:true,size:11,color:{argb:'FF8A6F4D'}};
   ws.mergeCells(2,1,2,ncols);const h=ws.getCell(2,1);h.value=titulo;h.font={bold:true,size:16,color:{argb:OL}};ws.getRow(2).height=24;
-  let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};r++});
+  let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};if(/^(Onde será usado|Observações)$/.test(k)){a.fill=b.fill={type:'pattern',pattern:'solid',fgColor:{argb:YEL}};b.font={bold:k!=='Observações'};a.font={bold:true,color:{argb:OL}};ws.getRow(r).height=Math.max(20,Math.ceil(String(v).length/70)*16)}r++});
   return r+1;
 }
 function xlsTable(ws,r0,cols,rows,opts={}){
@@ -1690,13 +1690,13 @@ async function xlsSol(list){
   const rows=list.flatMap(solLinhas).map((x,i)=>Object.assign(x,{n:i+1}));
   const s0=list[0];
   const info=mult?[['Obra',obraNomeCod(obra)],['Solicitações',list.map(s=>s.numero).join(', ')],['Data',fmtDY(iso(today()))],['Solicitante',meNome()]]
-    :[['Obra',obraNomeCod(obra)],['Solicitação de cotação',s0.numero],[s0.tipo==='lista'?'Lista':'Item',s0.item],['Data',fmtDY(iso(today()))],['Solicitante',s0.solicitante||meNome()],['Precisa na obra até',prazoTxt(s0)],['Prioridade',(s0.prioridade||'Normal').toUpperCase()]];
+    :[['Obra',obraNomeCod(obra)],['Solicitação de cotação',s0.numero],[s0.tipo==='lista'?'Lista':'Item',s0.item],['Onde será usado',s0.local],['Data',fmtDY(iso(today()))],['Solicitante',s0.solicitante||meNome()],['Precisa na obra até',prazoTxt(s0)],['Prioridade',(s0.prioridade||'Normal').toUpperCase()],['Observações',s0.tipo==='lista'?s0.especificacao:'']];
   let r=xlsHeader(ws,'SOLICITAÇÃO DE COTAÇÃO',info,cols.length);
   const nota=ws.getCell(r-1,1);nota.value='Colunas em amarelo: preencher com a cotação (fornecedor, valor unitário, prazo e pagamento). O total é calculado automaticamente.';nota.font={italic:true,size:9,color:{argb:'FF8A6F4D'}};
   const end=xlsTable(ws,r,cols,rows);
   const tr=ws.getRow(end);const ivt=cols.findIndex(c=>c.k==='vt')+1;tr.getCell(ivt-1).value='TOTAL';tr.getCell(ivt-1).font={bold:true};const tc=tr.getCell(ivt);tc.value={formula:`SUM(${L(ivt)}${r+1}:${L(ivt)}${end-1})`};tc.numFmt='"R$" #,##0.00';tc.font={bold:true};
   const msgS=mult?[`📋 *Solicitações de cotação* — ${obraNomeCod(obra)}`,...list.map(s=>`• ${s.numero} — ${s.item}${prazoTxt(s)?' (na obra até '+prazoTxt(s)+')':''}`),'','Planilha em anexo. Colunas em amarelo para preencher a cotação.']
-    :[`📋 *Solicitação de cotação ${s0.numero}*`,`Obra: ${obraNomeCod(obra)}`,`Item: ${s0.item}`,prazoTxt(s0)?`Na obra até: ${prazoTxt(s0)}`:'',s0.prioridade&&s0.prioridade!=='Normal'?`Prioridade: *${s0.prioridade.toUpperCase()}*`:'','','Planilha em anexo. Colunas em amarelo para preencher a cotação.'];
+    :[`📋 *Solicitação de cotação ${s0.numero}*`,`Obra: ${obraNomeCod(obra)}`,`Item: ${s0.item}`,s0.local?`Onde será usado: ${s0.local}`:'',prazoTxt(s0)?`Na obra até: ${prazoTxt(s0)}`:'',s0.prioridade&&s0.prioridade!=='Normal'?`Prioridade: *${s0.prioridade.toUpperCase()}*`:'','','Planilha em anexo. Colunas em amarelo para preencher a cotação.'];
   await xlsDownload(wb,mult?`${obraCod(obra)||obraNome(obra)} - Cotação - ${list.length} solicitações - ${fmtDY(iso(today())).replace(/\//g,'-')}`:`${obraCod(obra)||obraNome(obra)} - ${s0.numero} - ${s0.item}`,msgS.filter(x=>x!=='').join('\n').replace('\nPlanilha','\n\nPlanilha'));
   if(canWrite)for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}
   
@@ -1709,12 +1709,12 @@ async function xlsReq(r){
   let rows;
   if(itens.length){rows=itens.map((l,i)=>({n:i+1,prod:l.nome,ref:l.ref||'',esp:l.espec||'',qtd:l.qtd,un:l.un}))}
   else rows=[{n:1,prod:r.item,ref:r.referencia||'',esp:r.especificacao||'',qtd:r.qtd,un:r.un}];
-  const info=[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Tipo',r.direta?'Direta (sem cotação) — material de consumo':'Cotação aprovada'],['Ref. solicitação',r.solNumero],['Título',r.item],['Data',fmtDY(String(r.criadoEm||'').slice(0,10))],['Solicitante',r.solicitante||meNome()],['Precisa na obra até',r.dataNecessaria?fmtDY(r.dataNecessaria):''],['Prioridade',r.prioridade&&r.prioridade!=='Normal'?r.prioridade.toUpperCase():''],
+  const info=[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Tipo',r.direta?'Direta (sem cotação) — material de consumo':'Cotação aprovada'],['Ref. solicitação',r.solNumero],['Título',r.item],['Onde será usado',r.local],['Data',fmtDY(String(r.criadoEm||'').slice(0,10))],['Solicitante',r.solicitante||meNome()],['Precisa na obra até',r.dataNecessaria?fmtDY(r.dataNecessaria):''],['Prioridade',r.prioridade&&r.prioridade!=='Normal'?r.prioridade.toUpperCase():''],
     ['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',join([r.contato,r.telefone,r.email])],['Condição de pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto],['Nº pedido (ERP)',r.pedidoNum],['Observações',r.obs]];
-  let r0=xlsHeader(ws,'REQUISIÇÃO DE COMPRA',info,6);
+  let r0=xlsHeader(ws,'REQUISIÇÃO DE COMPRA',info,5);
   xlsTable(ws,r0,cols,rows);
   const nI=itens.length;
-  const msgR=[`🛒 *Requisição de compra ${r.numero}*`,`Obra: ${obraNomeCod(r.obra)}`,`${r.item}${nI?` — ${nI} ${nI>1?'materiais':'material'}`:''}`,r.dataNecessaria?`Na obra até: ${fmtDY(r.dataNecessaria)}`:'',r.prioridade&&r.prioridade!=='Normal'?`Prioridade: *${r.prioridade.toUpperCase()}*`:'',r.fornecedor?`Fornecedor: ${r.fornecedor}`:'','','Planilha em anexo com referência de cada item.'].filter((x,i,a)=>x!==''||a[i+1]).join('\n');
+  const msgR=[`🛒 *Requisição de compra ${r.numero}*`,`Obra: ${obraNomeCod(r.obra)}`,`${r.item}${nI?` — ${nI} ${nI>1?'materiais':'material'}`:''}`,r.local?`Onde será usado: ${r.local}`:'',r.dataNecessaria?`Na obra até: ${fmtDY(r.dataNecessaria)}`:'',r.prioridade&&r.prioridade!=='Normal'?`Prioridade: *${r.prioridade.toUpperCase()}*`:'',r.fornecedor?`Fornecedor: ${r.fornecedor}`:'','','Planilha em anexo com referência de cada item.'].filter((x,i,a)=>x!==''||a[i+1]).join('\n');
   await xlsDownload(wb,`${obraCod(r.obra)||obraNome(r.obra)} - ${r.numero} - ${r.item}`,msgR);
   if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{});
   
@@ -1800,7 +1800,7 @@ function escolherNova(){
 const F_LISTA=[
  {s:'Lista'},
  {k:'item',l:'Título da lista',req:1,w:2,ph:'Ex.: Materiais de pintura geral'},
- {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Aplicação / ambiente',ph:'Ex.: Pintura geral da torre'},
+ {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Onde será usado (aparece no Excel)',w:2,ph:'Ex.: Finalização da pintura no térreo e unidades'},
  {k:'dataNecessaria',l:'Necessário em obra',t:'date'},{k:'prioridade',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
  {k:'especificacao',l:'Observações gerais',t:'area',w:2,ph:'Ex.: entregar no almoxarifado; marcas de referência; aceita similar?'},
  {s:'Fornecedor indicado (opcional)'},
@@ -1883,7 +1883,7 @@ function openLista(s,target){
 const F_RDIR=[
  {s:'Requisição direta'},
  {k:'item',l:'Título',req:1,w:2,ph:'Ex.: Materiais de pintura geral'},
- {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Aplicação / ambiente',ph:'Ex.: Pintura geral da torre'},
+ {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Onde será usado (aparece no Excel)',w:2,ph:'Ex.: Finalização da pintura no térreo e unidades'},
  {k:'dataNecessaria',l:'Precisa na obra até',t:'date'},{k:'prioridade',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
  {k:'obs',l:'Observações',t:'area',w:2,ph:'Ex.: aceita similar; entregar no almoxarifado…'},
  {s:'Fornecedor e entrega'},
@@ -2027,7 +2027,7 @@ async function gerarReq(sol){
   if(!sol.fornecedor){toast('Informe o fornecedor na solicitação antes de gerar a requisição.');openSol(sol);return}
   const prev=sol.cotPrazo?iso(new Date(today().getTime()+Number(sol.cotPrazo)*864e5)):(sol.dataNecessaria||'');
   const r={id:uid(),obra:sol.obra,solId:sol.id,solNumero:sol.numero,numero:nextNum('requisicoes','REQ',sol.obra),status:'ativa',
-    item:sol.item,referencia:sol.tipo==='lista'?'':join([sol.modelo,sol.marca],' · '),especificacao:sol.tipo==='lista'?(sol.especificacao||''):specLines(sol).join('\n'),qtd:sol.tipo==='lista'?null:sol.qtd,un:sol.tipo==='lista'?'':sol.un,itens:sol.tipo==='lista'?(sol.itens||[]).filter(l=>l.nome):null,categoria:sol.categoria,local:sol.local,
+    item:sol.item,local:sol.local||'',referencia:sol.tipo==='lista'?'':join([sol.modelo,sol.marca],' · '),especificacao:sol.tipo==='lista'?(sol.especificacao||''):specLines(sol).join('\n'),qtd:sol.tipo==='lista'?null:sol.qtd,un:sol.tipo==='lista'?'':sol.un,itens:sol.tipo==='lista'?(sol.itens||[]).filter(l=>l.nome):null,categoria:sol.categoria,local:sol.local,
     fornecedor:sol.fornecedor||'',contato:sol.contato||'',telefone:sol.telefone||'',email:sol.email||'',
     valorTotal:sol.cotValor,pagamento:sol.cotPagamento||'',previsaoEntrega:prev,localEntrega:'Obra '+obraNomeCod(sol.obra),criadoEm:nowISO()};
   await put('requisicoes',r);
