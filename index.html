@@ -526,7 +526,7 @@ const normReq=r=>REQ_ST[r.status]?r:Object.assign({},r,{status:'ativa'});
 const PRIO={Normal:'gry',Alta:'amb',Urgente:'red'};
 const FASES=['Próxima','Fundação','Estrutura','Acabamentos','Finalização','Concluída'];
 const COLS=['obras','cronograma','solicitacoes','requisicoes'];
-const USERS=[{id:'waleska',nome:'Waleska',papel:'arq'},{id:'barbara',nome:'Barbara',papel:'arq'},{id:'thaisa',nome:'Thaisa',papel:'compras'}];
+const USERS=[{id:'waleska',nome:'Waleska',papel:'arq'},{id:'barbara',nome:'Barbara',papel:'arq'}];
 const isCompras=()=>(USERS.find(u=>u.id===ME)||{}).papel==='compras';
 let ARQ=true,RO_ALLOW=null;
 const papelNome=id=>(USERS.find(u=>u.id===id)||{}).papel==='compras'?'Compras':'Arquitetura';
