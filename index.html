@@ -428,6 +428,29 @@ input.cell[type=date]{font-size:13.5px}
 .sctl{opacity:.35;transition:.15s}.pi:hover .sctl{opacity:1}
 .vper{align-items:center}
 .vper span{font-size:12.5px;color:var(--mut);padding:0 6px 0 8px}
+.choose{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chc{text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;font-family:inherit;color:var(--ink)}
+.chc:hover{border-color:var(--ol);background:#fff}
+.chc b{display:block;font-weight:500;font-size:16px;margin-bottom:6px}
+.chc small{font-size:13px;color:var(--mut)}
+.ltools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.ltools input{font:inherit;border:1px solid var(--line2);border-radius:9px;padding:7px 10px;background:#fffdf9}
+.ltw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fffdf9}
+.lt{border-collapse:collapse;width:100%;min-width:560px}
+.lt th{font-size:12px;font-weight:500;color:#5c5749;text-align:left;padding:8px;border-bottom:1px solid var(--line2);background:var(--card2)}
+.lt td{border-bottom:1px solid #efe9de;padding:2px 4px;font-size:14px}
+.lt.ro td{padding:7px 8px}
+.lt input,.lt select{width:100%;border:0;background:transparent;font:inherit;font-size:14px;padding:8px 6px;outline:none;color:var(--ink)}
+.lt input:focus,.lt select:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--sage);border-radius:6px}
+.lt .ln{color:var(--tan);font-size:12px;width:30px;text-align:center}
+.pick{border:1px solid var(--line2);border-radius:12px;padding:10px;margin-bottom:10px;background:#fff}
+.pick input[type=search]{width:100%;font:inherit;border:1px solid var(--line2);border-radius:8px;padding:7px 10px;margin-bottom:8px}
+.pkl{max-height:260px;overflow:auto}
+.pkh{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--tan);padding:8px 2px 4px}
+.pki{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 4px;border-bottom:1px solid #f1ece2;font-size:14px}
+.pki small{display:block;font-size:11.5px;color:var(--mut)}
+.pki input{width:72px;border:1px solid var(--line2);border-radius:7px;padding:5px 7px;font:inherit;text-align:right}
+@media (max-width:860px){.choose{grid-template-columns:1fr}}
 .fotobox{display:flex;align-items:center;gap:12px}
 .fotobox .pv{width:120px;height:80px;border-radius:10px;background:#e7dfcf center/cover;flex:none;border:1px solid var(--line)}
 .mailto{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:14px;margin-bottom:12px;align-items:center}
@@ -525,7 +548,7 @@ const REQ_ST={ativa:{l:'Ativa',c:'blue'},confirmada:{l:'Confirmada',c:'amb'},ent
 const normReq=r=>REQ_ST[r.status]?r:Object.assign({},r,{status:'ativa'});
 const PRIO={Normal:'gry',Alta:'amb',Urgente:'red'};
 const FASES=['Próxima','Fundação','Estrutura','Acabamentos','Finalização','Concluída'];
-const COLS=['obras','cronograma','solicitacoes','requisicoes'];
+const COLS=['obras','cronograma','solicitacoes','requisicoes','catalogo'];
 const USERS=[{id:'waleska',nome:'Waleska',papel:'arq'},{id:'barbara',nome:'Barbara',papel:'arq'}];
 const isCompras=()=>(USERS.find(u=>u.id===ME)||{}).papel==='compras';
 let ARQ=true,RO_ALLOW=null;
@@ -572,7 +595,7 @@ const F_SOL=[
 const CHECK=[['qtd','Quantidade'],['modelo','Modelo/ref.'],['acabamento','Cor e caract.'],['dimensoes','Medidas'],['projeto','Projeto'],['especificacao','Outras infos'],['fornecedor','Fornecedor']];
 const OPC={projeto:1,especificacao:1,fornecedor:1};
 function checkOf(o){return CHECK.map(([k,l])=>{const v=k==='projeto'?(o.referencia||(o.anexos||[]).length):o[k];return {k,l,ok:v!=null&&v!==''&&v!==0||(k==='qtd'&&v===0),opc:!!OPC[k]}})}
-const faltando=o=>checkOf(o).filter(c=>!c.ok&&!c.opc).map(c=>c.l);
+const faltando=o=>{if(o.tipo==='lista'){const L=(o.itens||[]).filter(l=>l.nome),m=[];if(!o.categoria)m.push('Categoria');if(!L.length)m.push('Materiais');else if(L.some(l=>!l.qtd))m.push('Quantidades');return m}return checkOf(o).filter(c=>!c.ok&&!c.opc).map(c=>c.l)};
 const F_REQ=[
  {s:'Item'},
  {k:'item',l:'Item',req:1,w:2},{k:'especificacao',l:'Especificação',t:'area',w:2},
@@ -608,7 +631,7 @@ const fotoOf=o=>o&&(o.foto||FOTOS_PADRAO[o.id])||'';
 const fotoDiv=o=>fotoOf(o)?`<div class="ph0" style="background-image:url('${String(fotoOf(o)).replace(/'/g,'')}');background-position:center 45%"></div>`:`<div class="ph0 ph-none">${BLDG}</div>`;
 
 /* ---------- estado ---------- */
-const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[]};
+const S={obras:[],cronograma:[],solicitacoes:[],requisicoes:[],catalogo:[]};
 let CFG={emailCompras:EMAIL_PADRAO};
 let db=null, mode='loading', canWrite=true, pendingRender=false;
 const UI={obra:'geral',view:'cronograma',q:'',cat:'',pend:false,cancel:false,reqStatus:'todas',scope:'minhas',gq:'',stage:'',cview:'prio',grp:'local',area:'terreo',verPor:'item'};
@@ -832,6 +855,7 @@ function renderNav(){
     ${mine.length?`<div class="nl">Minhas obras</div>${mine.map(ni).join('')}`:''}
     ${other.length?`<div class="nl">${isCompras()?'Obras':'Outras obras'}</div>${other.map(ni).join('')}`:''}
     ${ARQ?`<button class="ni add" data-newobra>${ico('plus')}<span>Nova obra</span></button>`:''}
+    ${ARQ?`<button class="ni add" data-catalogo>${ico('list')}<span>Catálogo de materiais</span></button>`:''}
     <button class="ni add" data-cfg>${ico('gear')}<span>Configurações</span></button>`;
 }
 function obraStats(id){
@@ -1283,7 +1307,7 @@ function solCard(s){
   return `<div class="kc" draggable="${canWrite}" data-sol="${esc(s.id)}">
     <div class="num">${esc(s.numero||'')}${s.prioridade&&s.prioridade!=='Normal'?`<span class="pill p-${PRIO[s.prioridade]}">${esc(s.prioridade)}</span>`:''}</div>
     <div class="t">${esc(s.item)}</div>
-    <div class="m">${esc(join([qtdTxt(s),s.modelo]))}</div>
+    <div class="m">${s.tipo==='lista'?`📋 Lista · ${(s.itens||[]).filter(l=>l.nome).length} materiais`:esc(join([qtdTxt(s),s.modelo]))}</div>
     ${SOL_OPEN.includes(s.status)&&faltando(s).length?`<div class="inc">Falta: ${esc(faltando(s).join(', '))}</div>`:''}${s.cotValor&&s.categoria&&SOL_OPEN.includes(s.status)&&(()=>{const v=verbaOf(s.obra,s.categoria,s.id);return v.lim&&v.saldo-s.cotValor<0})()?`<div class="inc">⚠ Estoura a verba de ${esc(s.categoria)}</div>`:''}${(s.anexos||[]).length?`<div class="m">📎 ${s.anexos.length} anexo${s.anexos.length>1?'s':''}</div>`:''}
     <div class="m">${s.fornecedor?esc(s.fornecedor):'<i>Sem fornecedor indicado</i>'}</div>
     <div class="kf"><span class="${s.dataNecessaria&&daysTo(s.dataNecessaria)<7&&SOL_OPEN.includes(s.status)?'calc soon':'m'}" style="padding:0!important;margin:0">${s.dataNecessaria?'Em obra '+fmtD(s.dataNecessaria):''}</span>
@@ -1543,6 +1567,15 @@ function solRows(s){
     f:[['Fornecedor',s.fornecedor],['Contato',s.contato],['Telefone / WhatsApp',s.telefone],['E-mail',s.email],['Outras indicações',s.fornecedoresAlt]]};
 }
 function solBlocks(s,withResumo){
+  if(s.tipo==='lista'){
+    const L=(s.itens||[]).filter(l=>l.nome),B=[];
+    if(withResumo)B.push({h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(s.obra)],['Solicitação de cotação',s.numero],['Lista',s.item],['Quantidade de materiais',String(L.length)],['Aplicação',s.local],['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],['Solicitante',s.solicitante||meNome()]]});
+    B.push({h:withResumo?'Materiais para cotar':`${s.numero} — ${s.item} (${L.length} materiais)`,table:{head:['Material','Qtd','Un','Especificação'],rows:L.map(l=>[l.nome,numTxt(l.qtd),l.un,l.espec])}});
+    if(s.especificacao)B.push({h:'Observações',text:s.especificacao});
+    const f=[['Fornecedor',s.fornecedor],['Contato',s.contato],['Telefone / WhatsApp',s.telefone],['E-mail',s.email]];
+    if(f.some(x=>x[1]))B.push({h:'Fornecedor indicado',rows:f});
+    return B;
+  }
   const r=solRows(s),B=[];
   if(withResumo)B.push({h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(s.obra)],['Solicitação de cotação',s.numero],['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],['Solicitante',s.solicitante||meNome()]]});
   B.push({h:withResumo?'O que cotar':`${s.numero} — ${s.item}`,rows:withResumo?r.o:[['Precisa estar na obra até',prazoTxt(s)],['Prioridade',(s.prioridade||'Normal').toUpperCase()],...r.o]});
@@ -1557,7 +1590,7 @@ function mailSol(s){
   MAIL_ANX=(s.anexos||[]);
   const pz=prazoTxt(s);
   openMail({title:'Enviar solicitação de cotação',subject:`[COTAÇÃO ARQ] ${obraCod(s.obra)||obraNome(s.obra)} | ${s.numero} | ${s.item}${pz?' | em obra até '+pz.slice(0,5):''}${s.prioridade&&s.prioridade!=='Normal'?' | '+s.prioridade.toUpperCase():''}`,
-    doc:{saud:'Olá, equipe de compras!',intro:`Segue uma nova solicitação de cotação da Arquitetura para a obra ${obraNomeCod(s.obra)}. Por favor, cotar o item abaixo.`,
+    doc:{saud:'Olá, equipe de compras!',intro:`Segue uma nova solicitação de cotação da Arquitetura para a obra ${obraNomeCod(s.obra)}. Por favor, cotar ${s.tipo==='lista'?'os materiais':'o item'} abaixo.`,
       blocks:[...solBlocks(s,true),{h:'O que precisamos de você',steps:PASSOS_SOL}]},
     onOpen:()=>{if(canWrite)patch('solicitacoes',s.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
@@ -1571,7 +1604,7 @@ function mailBatch(){
   MAIL_ANX=list.flatMap(s=>s.anexos||[]);
   const n=list.length;
   const blocks=[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(UI.obra)],['Itens para cotar',String(n)],['Solicitante',meNome()]]},
-    {h:'Lista de itens para cotar',table:{head:['Nº','Produto','Qtd','Em obra até','Prioridade'],rows:list.map(s=>[s.numero,s.item,qtdTxt(s),prazoTxt(s),s.prioridade||'Normal'])}}];
+    {h:'Lista de itens para cotar',table:{head:['Nº','Produto','Qtd','Em obra até','Prioridade'],rows:list.map(s=>[s.numero,s.item,s.tipo==='lista'?`${(s.itens||[]).filter(l=>l.nome).length} materiais`:qtdTxt(s),prazoTxt(s),s.prioridade||'Normal'])}}];
   list.forEach(s=>blocks.push(...solBlocks(s,false)));
   blocks.push({h:'O que precisamos de você',steps:PASSOS_SOL});
   openMail({title:`Enviar ${n} solicitaç${n>1?'ões':'ão'}`,subject:`[COTAÇÃO ARQ] ${obraCod(UI.obra)||obraNome(UI.obra)} | ${n} nova${n>1?'s':''} solicitaç${n>1?'ões':'ão'} de cotação`,
@@ -1584,6 +1617,7 @@ function mailReq(r){
     doc:{saud:'Olá, equipe de compras!',intro:`Segue requisição de compra: a cotação abaixo foi aprovada pela Arquitetura. Por favor, emitir o pedido de compra.`,
       blocks:[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Ref. solicitação de cotação',r.solNumero],['Valor total',money(r.valorTotal)],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):'']]},
         {h:'Item',rows:[['Produto',r.item],['Quantidade',qtdTxt(r)],['Ambiente / aplicação',r.local],['Especificação',r.especificacao]]},
+        ...((r.itens||[]).length?[{h:'Materiais',table:{head:['Material','Qtd','Un','Especificação'],rows:r.itens.map(l=>[l.nome,numTxt(l.qtd),l.un,l.espec])}}]:[]),
         {h:'Fornecedor',rows:[['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',r.contato],['Telefone',r.telefone],['E-mail',r.email]]},
         {h:'Condições',rows:[['Valor total',money(r.valorTotal)],['Pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto]]},
         ...(r.obs?[{h:'Observações',text:r.obs}]:[]),
@@ -1653,11 +1687,116 @@ function openCron(c,pre){
     buttons:b});
 }
 
+/* ---------- lista de materiais + catálogo ---------- */
+const KIT_PINTURA=[['Fita crepe 48 mm (rolo 50 m)','un'],['Fita crepe 24 mm (rolo 50 m)','un'],['Fita crepe 18 mm (rolo 50 m)','un'],['Pincel 2" cerdas gris','un'],['Pincel 1" cerdas gris','un'],['Trincha 3"','un'],['Rolo de lã 23 cm anti-respingo com garfo','un'],['Rolo de espuma 9 cm','un'],['Rolo de espuma 15 cm','un'],['Bandeja para pintura','un'],['Extensor para rolo 2 m','un'],['Lixa para massa nº 120','pç'],['Lixa para massa nº 150','pç'],['Lixa para massa nº 220','pç'],['Lixa d\'água nº 400','pç'],['Massa corrida PVA (lata 18 L)','un'],['Massa acrílica (lata 18 L)','un'],['Selador acrílico (lata 18 L)','un'],['Fundo preparador de paredes (lata 18 L)','un'],['Tinta acrílica fosca (lata 18 L)','un'],['Esmalte sintético (galão 3,6 L)','un'],['Aguarrás (900 ml)','un'],['Thinner (900 ml)','un'],['Lona plástica preta','m²'],['Papelão ondulado p/ proteção de piso (rolo)','un'],['Espátula de aço 8 cm','un'],['Desempenadeira de aço lisa','un'],['Estopa','kg'],['Balde 20 L','un'],['Luvas nitrílicas (par)','un'],['Máscara PFF2','un'],['Óculos de proteção','un']];
+function escolherNova(){
+  MODAL_CTX=null;
+  openModal({title:'Nova solicitação de cotação',sub:esc(obraNomeCod(UI.obra)),body:`<div class="choose">
+    <button type="button" class="chc" data-ch="item"><b>Item com especificação</b><small>Um produto com modelo, cor, medidas e projeto. Ex.: porcelanato, luminária, bancada.</small></button>
+    <button type="button" class="chc" data-ch="lista"><b>📋 Lista de materiais</b><small>Vários itens pequenos numa solicitação só, com quantidades. Ex.: pincel, fita crepe, lixa.</small></button></div>`,
+    buttons:[{l:'Fechar',cls:'ghost',fn:closeModal}]});
+  $('#modal').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{closeModal();b.dataset.ch==='lista'?openLista():openSol()});
+}
+const F_LISTA=[
+ {s:'Lista'},
+ {k:'item',l:'Título da lista',req:1,w:2,ph:'Ex.: Materiais de pintura geral'},
+ {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Aplicação / ambiente',ph:'Ex.: Pintura geral da torre'},
+ {k:'dataNecessaria',l:'Necessário em obra',t:'date'},{k:'prioridade',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
+ {k:'especificacao',l:'Observações gerais',t:'area',w:2,ph:'Ex.: entregar no almoxarifado; marcas de referência; aceita similar?'},
+ {s:'Fornecedor indicado (opcional)'},
+ {k:'fornecedor',l:'Fornecedor'},{k:'contato',l:'Contato'},{k:'telefone',l:'Telefone / WhatsApp',t:'tel'},{k:'email',l:'E-mail',t:'email'},
+ {s:'Cotação (compras)'},
+ {k:'cotValor',l:'Valor total cotado (R$)',t:'money'},{k:'cotPrazo',l:'Prazo de entrega (dias)',t:'number'},
+ {k:'cotPagamento',l:'Condição de pagamento',w:2},{k:'cotObs',l:'Registro do contato',t:'area',w:2}];
+const catFind=n=>S.catalogo.find(c=>String(c.nome||'').toLowerCase()===String(n||'').trim().toLowerCase());
+function openLista(s,target){
+  const isNew=!s;
+  if(isNew)s={id:uid(),obra:UI.obra,tipo:'lista',status:'nova',prioridade:'Normal',categoria:'Pintura',criadoEm:nowISO(),solicitante:meNome(),criadoPor:ME,hist:[],itens:[]};
+  const st=s.status;
+  MODAL_CTX={linhas:(s.itens||[]).map(l=>Object.assign({},l))};
+  if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});
+  const readLines=()=>{const rows=[...document.querySelectorAll('#lrows tr')];if(!rows.length)return;MODAL_CTX.linhas=rows.map(tr=>({nome:tr.querySelector('[data-l=nome]').value.trim(),qtd:parseNum(tr.querySelector('[data-l=qtd]').value),un:tr.querySelector('[data-l=un]').value,espec:tr.querySelector('[data-l=espec]').value.trim()}))};
+  const ro=ARQ?'':' disabled';
+  const drawLines=()=>{$('#lrows').innerHTML=MODAL_CTX.linhas.map((l,i)=>`<tr><td class="ln">${i+1}</td><td><input data-l="nome" list="dl-cat" value="${esc(l.nome)}" placeholder="Material"${ro}></td><td style="width:74px"><input data-l="qtd" inputmode="decimal" value="${esc(numTxt(l.qtd))}" placeholder="0"${ro}></td><td style="width:74px"><select data-l="un"${ro}>${UNS.map(u=>`<option${(l.un||'un')===u?' selected':''}>${u}</option>`).join('')}</select></td><td><input data-l="espec" value="${esc(l.espec||'')}" placeholder="marca, cor, tamanho…"${ro}></td><td style="width:34px">${ARQ?`<button type="button" class="ib" data-ldel="${i}" title="Remover">×</button>`:''}</td></tr>`).join('');$('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length};
+  const save=async(f,newSt,strict)=>{
+    readLines();
+    const o=Object.assign({},byId('solicitacoes',s.id)||s,readForm(F_LISTA,f),{tipo:'lista',itens:MODAL_CTX.linhas.filter(l=>l.nome)});
+    if(newSt&&newSt!=='cancelada'&&newSt!=='nova')strict=true;
+    let miss=strict?missing(F_LISTA,o).concat(faltando(o).filter(x=>x!=='Categoria')):(o.item?[]:['Título da lista']);
+    if(miss.length){toast('Falta preencher: '+miss.join(', '));return null}
+    if((newSt==='cotada'||newSt==='aprovada')&&!o.cotValor){toast('Informe o valor cotado.');return null}
+    if((newSt==='aprovada'||strict==='REQ')&&o.cotValor&&o.categoria){const v=verbaOf(o.obra,o.categoria,o.id);if(v.lim&&v.saldo-o.cotValor<0&&VB_OK!==o.id){VB_OK=o.id;toast(`Atenção: estoura a verba de ${o.categoria} em ${money(o.cotValor-v.saldo)}. Clique de novo para aprovar mesmo assim.`);return null}}
+    if(!o.numero)o.numero=nextNum('solicitacoes','SOL',o.obra);
+    if(newSt&&newSt!==o.status){o.status=newSt;o.hist=(o.hist||[]).concat([{st:newSt,em:nowISO()}])}
+    else if(isNew&&!(o.hist||[]).length)o.hist=[{st:'nova',em:nowISO()}];
+    await put('solicitacoes',o);return o;
+  };
+  const b=[];
+  if(ARQ){
+    if(!isNew){const rq=reqOf(s.id);b.push({l:'Excluir',cls:'ghost danger',confirm:rq?`Excluir também ${rq.numero}?`:'Confirmar exclusão',fn:async()=>{if(rq)await del('requisicoes',rq.id);await del('solicitacoes',s.id);closeModal();toast('Lista excluída')}})}
+    b.push({l:isNew?'Salvar rascunho':'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();toast(`${o.numero} salva`)}}});
+    const NX={contato:['Marcar como cotada →','cotada'],cotada:['Aprovar cotação →','aprovada'],aprovada:['Gerar requisição de compra →','REQ'],cancelada:['Reabrir','nova']};
+    if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
+    if(isNew||st==='nova')b.push({l:'Salvar e enviar para cotação ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
+    if(!isNew&&st!=='nova'&&NX[st]){const[l,ns]=NX[st];b.push({l,cls:'pri',fn:async f=>{if(ns==='REQ'){const o=await save(f,null,'REQ');if(o)await gerarReq(o);return}const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
+  }
+  if(!isNew&&st==='requisitada'){const r=reqOf(s.id);if(r)b.push({l:'Ver requisição de compra →',cls:'dark',fn:()=>{closeModal();UI.view='requisicoes';saveUI();render();openReq(r)}})}
+  if(!b.length)b.push({l:'Fechar',cls:'ghost',fn:closeModal});
+  const flow=st==='cancelada'?'<div class="tools"><span class="pill p-red">Cancelada</span></div>':`<div class="flow">${SOL_FLOW.map((k,i)=>`<div class="fs ${SOL_FLOW.indexOf(st)>=i?'done':''} ${k===st?'cur':''}"><i>${i+1}</i>${SOL_ST[k].l}</div>`).join('')}</div>`;
+  const fl=F_LISTA.findIndex(f=>f.s==='Fornecedor indicado (opcional)');
+  openModal({title:isNew?'Nova lista de materiais':esc(join([s.numero,s.item],' — ')),sub:esc(obraNomeCod(s.obra))+' · solicitação de cotação em lista',
+    body:flow+(isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button></div>`)+formHTML(F_LISTA.slice(0,fl),s)+
+      `<div class="sec" style="margin-top:16px">Materiais <span class="mut" style="text-transform:none;letter-spacing:0">(<span id="lcount">0</span>)</span></div>
+      ${ARQ?`<div class="ltools"><button type="button" class="btn sm" data-lcat>📋 Adicionar do catálogo</button><button type="button" class="btn sm" data-lsavecat>☆ Salvar novos no catálogo</button></div><div id="lpick"></div>`:''}
+      <div class="ltw"><table class="lt"><thead><tr><th>#</th><th>Material</th><th>Qtd</th><th>Un</th><th>Especificação</th><th></th></tr></thead><tbody id="lrows"></tbody></table></div>
+      ${ARQ?'<button type="button" class="btn sm" data-ladd style="margin-top:8px">+ linha</button> <span class="mut" style="font-size:12.5px">dica: Enter na última linha cria outra</span>':''}
+      <datalist id="dl-cat">${S.catalogo.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>`+formHTML(F_LISTA.slice(fl),s),buttons:b});
+  MODAL_CTX.spec=F_LISTA;MODAL_CTX.msg=v=>{readLines();return quoteMsg(Object.assign({},s,v,{tipo:'lista',itens:MODAL_CTX.linhas}))};
+  drawLines();
+  const m=$('#mform');
+  m.addEventListener('click',e=>{
+    const dl=e.target.closest('[data-ldel]');if(dl){readLines();MODAL_CTX.linhas.splice(+dl.dataset.ldel,1);if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();return}
+    if(e.target.closest('[data-ladd]')){readLines();MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();const ins=m.querySelectorAll('[data-l=nome]');ins[ins.length-1].focus();return}
+    if(e.target.closest('[data-lcat]')){readLines();const box=$('#lpick');if(box.innerHTML){box.innerHTML='';return}
+      const byCat={};S.catalogo.forEach(c=>{const k=c.categoria||'Outros';(byCat[k]=byCat[k]||[]).push(c)});
+      box.innerHTML=S.catalogo.length?`<div class="pick"><input type="search" id="pkq" placeholder="Filtrar catálogo…"><div class="pkl">${Object.keys(byCat).sort().map(k=>`<div class="pkh">${esc(k)}</div>`+byCat[k].sort((a,b)=>String(a.nome).localeCompare(b.nome)).map(c=>`<label class="pki" data-n="${esc(String(c.nome).toLowerCase())}"><span>${esc(c.nome)}<small>${esc(join([c.un,c.espec]))}</small></span><input data-pkid="${esc(c.id)}" inputmode="decimal" placeholder="qtd"></label>`).join('')).join('')}</div><div style="text-align:right;margin-top:8px"><button type="button" class="btn sm pri" data-pkadd>Adicionar selecionados</button></div></div>`
+        :`<div class="pick mut">O catálogo está vazio. <button type="button" class="lnk" data-kit style="text-decoration:underline">Carregar kit de pintura sugerido</button> ou use “Salvar novos no catálogo” depois de digitar os materiais.</div>`;
+      const q=$('#pkq');if(q)q.oninput=()=>box.querySelectorAll('.pki').forEach(x=>x.style.display=x.dataset.n.includes(q.value.toLowerCase())?'':'none');return}
+    if(e.target.closest('[data-kit]')){carregarKit().then(()=>{$('#lpick').innerHTML='';m.querySelector('[data-lcat]').click()});return}
+    if(e.target.closest('[data-pkadd]')){readLines();let n=0;$('#lpick').querySelectorAll('[data-pkid]').forEach(inp=>{const q=parseNum(inp.value);if(!q)return;const c=byId('catalogo',inp.dataset.pkid);if(!c)return;
+        const ex=MODAL_CTX.linhas.find(l=>l.nome.toLowerCase()===String(c.nome).toLowerCase());if(ex)ex.qtd=q;else MODAL_CTX.linhas.push({nome:c.nome,qtd:q,un:c.un||'un',espec:c.espec||''});n++});
+      MODAL_CTX.linhas=MODAL_CTX.linhas.filter(l=>l.nome||MODAL_CTX.linhas.length===1);if(MODAL_CTX.linhas.length>1)MODAL_CTX.linhas=MODAL_CTX.linhas.filter(l=>l.nome);
+      $('#lpick').innerHTML='';drawLines();toast(n?`${n} materiais adicionados`:'Digite a quantidade dos itens que quer adicionar');return}
+    if(e.target.closest('[data-lsavecat]')){readLines();(async()=>{let n=0;const cat=(m.querySelector('[name=categoria]')||{}).value||'Outros';for(const l of MODAL_CTX.linhas){if(!l.nome||catFind(l.nome))continue;await put('catalogo',{id:uid(),nome:l.nome,un:l.un||'un',espec:l.espec||'',categoria:cat});n++}toast(n?`${n} ${n===1?'material salvo':'materiais salvos'} no catálogo`:'Todos já estão no catálogo')})();return}
+  });
+  m.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.l==='nome'){const c=catFind(t.value);if(c){const tr=t.closest('tr');const u=tr.querySelector('[data-l=un]'),sp=tr.querySelector('[data-l=espec]');u.value=c.un||u.value;if(!sp.value)sp.value=c.espec||''}}readLines();$('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length});
+  m.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.dataset&&t.dataset.l){e.preventDefault();const tr=t.closest('tr');if(!tr.nextElementSibling){m.querySelector('[data-ladd]').click()}else tr.nextElementSibling.querySelector('[data-l=nome]').focus()}});
+}
+async function carregarKit(){let n=0;for(const[nome,un]of KIT_PINTURA){if(catFind(nome))continue;await put('catalogo',{id:uid(),nome,un,espec:'',categoria:'Pintura'});n++}toast(n?`${n} materiais de pintura adicionados ao catálogo`:'O kit já está no catálogo');}
+function openCatalogo(){
+  MODAL_CTX=null;
+  const draw=()=>{const q=($('#catq')||{}).value||'';const list=S.catalogo.filter(c=>!q||String(c.nome+' '+c.espec+' '+c.categoria).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>String(a.categoria).localeCompare(b.categoria)||String(a.nome).localeCompare(b.nome));
+    $('#catrows').innerHTML=list.length?list.map(c=>`<tr data-cid="${esc(c.id)}"><td><input data-cf="nome" value="${esc(c.nome)}"></td><td style="width:80px"><select data-cf="un">${UNS.map(u=>`<option${(c.un||'un')===u?' selected':''}>${u}</option>`).join('')}</select></td><td><input data-cf="espec" value="${esc(c.espec||'')}" placeholder="marca, cor, tamanho…"></td><td style="width:170px"><select data-cf="categoria">${CATS.map(k=>`<option${(c.categoria||'Outros')===k?' selected':''}>${k}</option>`).join('')}</select></td><td style="width:34px"><button type="button" class="ib" data-cdel="${esc(c.id)}">×</button></td></tr>`).join(''):'<tr><td colspan="5" class="mut" style="padding:16px;text-align:center">Nenhum material.</td></tr>';$('#catn').textContent=S.catalogo.length};
+  openModal({title:'Catálogo de materiais',sub:'Itens que vocês pedem com frequência — usados nas listas de materiais',
+    body:`<div class="ltools"><input type="search" id="catq" placeholder="Buscar…" style="flex:1;min-width:160px"><button type="button" class="btn sm" data-cadd>+ Material</button><button type="button" class="btn sm" data-kit2>Carregar kit de pintura sugerido</button></div>
+      <div class="ltw"><table class="lt"><thead><tr><th>Material</th><th>Un</th><th>Especificação padrão</th><th>Categoria</th><th></th></tr></thead><tbody id="catrows"></tbody></table></div><div class="hint" style="margin-top:10px"><span id="catn">0</span> materiais no catálogo · as alterações salvam sozinhas</div>`,
+    buttons:[{l:'Fechar',cls:'pri',fn:closeModal}]});
+  draw();
+  const m=$('#mform');
+  $('#catq').oninput=draw;
+  m.addEventListener('change',async e=>{const tr=e.target.closest('tr[data-cid]');if(!tr||!e.target.dataset.cf)return;const c=byId('catalogo',tr.dataset.cid);if(!c)return;await put('catalogo',Object.assign({},c,{[e.target.dataset.cf]:e.target.value.trim()}))});
+  m.addEventListener('click',async e=>{
+    const d=e.target.closest('[data-cdel]');if(d){await del('catalogo',d.dataset.cdel);setTimeout(draw,150);return}
+    if(e.target.closest('[data-cadd]')){const id=uid();await put('catalogo',{id,nome:'Novo material',un:'un',espec:'',categoria:'Pintura'});$('#catq').value='';setTimeout(()=>{draw();const i=m.querySelector(`tr[data-cid="${id}"] [data-cf=nome]`);if(i){i.focus();i.select()}},150);return}
+    if(e.target.closest('[data-kit2]')){await carregarKit();setTimeout(draw,200);return}
+  });
+}
 /* ---------- solicitação ---------- */
 function specLines(s){
   return [s.modelo||s.marca?'Modelo/referência: '+join([s.modelo,s.marca],' · '):'',s.acabamento?'Cor e características: '+s.acabamento:'',s.dimensoes?'Medidas: '+s.dimensoes:'',s.referencia?'Projeto: '+s.referencia:'',(s.anexos||[]).length?'Anexos: '+s.anexos.map(a=>a.nome).join(', '):'',s.especificacao?'Outras informações: '+s.especificacao:''].filter(Boolean);
 }
 function quoteMsg(s){
+  if(s.tipo==='lista'){const L=(s.itens||[]).filter(l=>l.nome);return [`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de uma cotação para a obra ${obraNomeCod(s.obra)} dos materiais abaixo:`,'',...L.map(l=>`• ${numTxt(l.qtd)} ${l.un||''} — ${l.nome}${l.espec?' ('+l.espec+')':''}`),'',s.especificacao?`Obs.: ${s.especificacao}`:'',s.dataNecessaria?`Precisamos na obra até ${fmtDY(s.dataNecessaria)}.`:'','Pode nos enviar valor, prazo de entrega e condições de pagamento?','','Obrigado(a)!'].filter((x,i,a)=>x!==''||a[i-1]!=='').join('\n')}
   const L=[`Olá${s.contato?', '+s.contato:''}! Tudo bem?`,`Aqui é da Absoluta Construtora. Gostaríamos de uma cotação para a obra ${obraNomeCod(s.obra)}:`,'',`• Produto: ${s.item||''}`];
   if(qtdTxt(s))L.push(`• Quantidade: ${qtdTxt(s)}`);
   if(s.modelo||s.marca)L.push(`• Modelo / referência: ${join([s.modelo,s.marca],' · ')}`);
@@ -1677,6 +1816,7 @@ function waHref(s){
   return `https://wa.me/${n}?text=${encodeURIComponent(quoteMsg(s))}`;
 }
 function openSol(s,cron,target){
+  if(s&&s.tipo==='lista')return openLista(s,target);
   const isNew=!s;
   if(isNew){
     s={id:uid(),obra:(cron&&cron.obra)||UI.obra,status:'nova',prioridade:'Normal',un:'un',criadoEm:nowISO(),solicitante:meNome(),criadoPor:ME,hist:[]};
@@ -1743,7 +1883,7 @@ async function gerarReq(sol){
   if(!sol.fornecedor){toast('Informe o fornecedor na solicitação antes de gerar a requisição.');openSol(sol);return}
   const prev=sol.cotPrazo?iso(new Date(today().getTime()+Number(sol.cotPrazo)*864e5)):(sol.dataNecessaria||'');
   const r={id:uid(),obra:sol.obra,solId:sol.id,solNumero:sol.numero,numero:nextNum('requisicoes','REQ',sol.obra),status:'ativa',
-    item:sol.item,especificacao:specLines(sol).join('\n'),qtd:sol.qtd,un:sol.un,categoria:sol.categoria,local:sol.local,
+    item:sol.item,especificacao:sol.tipo==='lista'?(sol.especificacao||''):specLines(sol).join('\n'),qtd:sol.tipo==='lista'?null:sol.qtd,un:sol.tipo==='lista'?'':sol.un,itens:sol.tipo==='lista'?(sol.itens||[]).filter(l=>l.nome):null,categoria:sol.categoria,local:sol.local,
     fornecedor:sol.fornecedor||'',contato:sol.contato||'',telefone:sol.telefone||'',email:sol.email||'',
     valorTotal:sol.cotValor,pagamento:sol.cotPagamento||'',previsaoEntrega:prev,localEntrega:'Obra '+obraNomeCod(sol.obra),criadoEm:nowISO()};
   await put('requisicoes',r);
@@ -1755,7 +1895,7 @@ async function gerarReq(sol){
 function reqText(r){
   return [`REQUISIÇÃO DE COMPRA — ${r.numero}`,`Absoluta Construtora · Arquitetura`,`Obra: ${obraNomeCod(r.obra)}`,`Data: ${fmtDY(String(r.criadoEm||'').slice(0,10))}`,
     r.solNumero?`Ref. solicitação: ${r.solNumero}`:'','',
-    `ITEM: ${r.item||''}`,qtdTxt(r)?`Quantidade: ${qtdTxt(r)}`:'',r.local?`Local de aplicação: ${r.local}`:'',r.especificacao?`Especificação:\n${r.especificacao}`:'','',
+    `ITEM: ${r.item||''}`,qtdTxt(r)?`Quantidade: ${qtdTxt(r)}`:'',(r.itens||[]).length?'MATERIAIS:\n'+r.itens.map(l=>`- ${numTxt(l.qtd)} ${l.un||''} ${l.nome}${l.espec?' ('+l.espec+')':''}`).join('\n'):'',r.local?`Local de aplicação: ${r.local}`:'',r.especificacao?`Especificação:\n${r.especificacao}`:'','',
     `FORNECEDOR: ${r.fornecedor||''}`,r.cnpj?`CNPJ: ${r.cnpj}`:'',join([r.contato,r.telefone,r.email])?`Contato: ${join([r.contato,r.telefone,r.email])}`:'','',
     r.valorTotal?`Valor total: ${money(r.valorTotal)}`:'',r.pagamento?`Pagamento: ${r.pagamento}`:'',r.previsaoEntrega?`Previsão de entrega: ${fmtDY(r.previsaoEntrega)}`:'',
     r.localEntrega?`Local de entrega: ${r.localEntrega}`:'',r.centroCusto?`Centro de custo: ${r.centroCusto}`:'',r.pedidoNum?`Nº pedido (ERP): ${r.pedidoNum}`:'',r.obs?`\nObs.: ${r.obs}`:'']
@@ -1777,7 +1917,7 @@ function openReq(r){
     closeModal();mailReq(o)}});
   MODAL_CTX=null;
   openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
-    body:(()=>{RO_ALLOW=isCompras()?new Set(['status','pedidoNum','previsaoEntrega','pagamento','valorTotal','obs','cnpj']):null;const h=formHTML(F_REQ,r);RO_ALLOW=null;return h})()+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
+    body:((r.itens||[]).length?`<div class="sec" style="margin-bottom:8px">Materiais (${r.itens.length})</div><table class="lt ro"><thead><tr><th>#</th><th>Material</th><th>Qtd</th><th>Un</th><th>Especificação</th></tr></thead><tbody>${r.itens.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.nome)}</td><td>${esc(numTxt(l.qtd))}</td><td>${esc(l.un||'')}</td><td>${esc(l.espec||'')}</td></tr>`).join('')}</tbody></table><div style="height:14px"></div>`:'')+(()=>{RO_ALLOW=isCompras()?new Set(['status','pedidoNum','previsaoEntrega','pagamento','valorTotal','obs','cnpj']):null;const h=formHTML(F_REQ,r);RO_ALLOW=null;return h})()+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
 }
 
 /* ---------- copiar / toast ---------- */
@@ -1800,7 +1940,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo],[data-verpor]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo],[data-verpor],[data-catalogo]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1830,7 +1970,8 @@ document.addEventListener('click',e=>{
   if(d.mailsol)return mailSol(byId('solicitacoes',d.mailsol));
   if(d.mailreq)return mailReq(byId('requisicoes',d.mailreq));
   if(d.adv){const s=byId('solicitacoes',d.adv);if(s)moveSol(s.id,SOL_FLOW[SOL_FLOW.indexOf(s.status)+1]);return}
-  if('newsol' in d)return openSol();
+  if('newsol' in d)return escolherNova();
+  if('catalogo' in d)return openCatalogo();
   if(d.solfrom)return openSol(null,byId('cronograma',d.solfrom));
   if(d.opensol)return openSol(byId('solicitacoes',d.opensol));
   if(d.cron)return openCron(byId('cronograma',d.cron));
