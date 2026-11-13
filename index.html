@@ -428,7 +428,7 @@ input.cell[type=date]{font-size:13.5px}
 .sctl{opacity:.35;transition:.15s}.pi:hover .sctl{opacity:1}
 .vper{align-items:center}
 .vper span{font-size:12.5px;color:var(--mut);padding:0 6px 0 8px}
-.choose{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choose{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .chc{text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;font-family:inherit;color:var(--ink)}
 .chc:hover{border-color:var(--ol);background:#fff}
 .chc b{display:block;font-weight:500;font-size:16px;margin-bottom:6px}
@@ -987,7 +987,7 @@ function renderObra(){
     <button class="tab ${UI.view==='solicitacoes'?'on':''}" data-view="solicitacoes">Solicitações de cotação <span class="c">${s.abertas}</span></button>
     <button class="tab ${UI.view==='requisicoes'?'on':''}" data-view="requisicoes">Requisições de compra <span class="c">${s.ativas.length}</span></button>
     <button class="tab ${UI.view==='orcamento'?'on':''}" data-view="orcamento">Orçamento ${(()=>{const n=CATS.filter(c=>{const v=verbaOf(o.id,c);return v.lim&&v.saldo<0}).length;return n?`<span class="c al">${n} estourada${n>1?'s':''}</span>`:''})()}</button>
-    <span class="sp"></span>${ARQ&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação de cotação'}</button>`:''}
+    <span class="sp"></span>${ARQ&&UI.view==='requisicoes'?`<button class="btn pri" data-newreqd>${ico('plus')} Requisição direta (sem cotação)</button>`:''}${ARQ&&(UI.view==='cronograma'||UI.view==='solicitacoes')?`<button class="btn pri" ${UI.view==='cronograma'?'data-focusadd':'data-newsol'}>${ico('plus')} ${UI.view==='cronograma'?'Novo item':'Nova solicitação de cotação'}</button>`:''}
   </div>
   ${tb}
   <div id="items"></div>`;
@@ -1339,7 +1339,7 @@ function reqTable(){
   return `<div class="tw"><table class="st" style="min-width:900px"><thead><tr><th>Nº</th><th>Item</th><th>Fornecedor</th><th>Valor</th><th>Previsão entrega</th><th>Status</th><th>Nº pedido ERP</th><th></th></tr></thead><tbody>
   ${arr.map(r=>`<tr data-row="${esc(r.id)}" data-col="requisicoes">
     <td class="calc" style="color:var(--y);font-weight:800;font-size:12px">${esc(r.numero)}</td>
-    <td class="calc" style="font-weight:700;white-space:normal;min-width:200px">${esc(r.item)}<div class="m" style="margin:2px 0 0">${esc(qtdTxt(r))}</div></td>
+    <td class="calc" style="font-weight:700;white-space:normal;min-width:200px">${esc(r.item)}<div class="m" style="margin:2px 0 0">${r.itens&&r.itens.length?`${r.direta?'⚡ direta · ':'📋 '}${r.itens.length} materiais`:esc(qtdTxt(r))}</div></td>
     <td class="calc">${esc(r.fornecedor)}</td>
     <td class="calc" style="font-weight:800">${money(r.valorTotal)||'—'}</td>
     <td style="width:140px"><input class="cell" type="date" data-f="previsaoEntrega" value="${esc(r.previsaoEntrega||'')}"${ro}></td>
@@ -1612,6 +1612,15 @@ function mailBatch(){
     onOpen:async()=>{if(!canWrite)return;for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}}});
 }
 function mailReq(r){
+  if(r.direta){MAIL_ANX=[];const L=(r.itens||[]).filter(l=>l.nome);
+    return openMail({title:'Enviar requisição de compra',subject:`[REQUISIÇÃO DE COMPRA ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item}${r.dataNecessaria?' | na obra até '+fmtD(r.dataNecessaria):''}${r.prioridade&&r.prioridade!=='Normal'?' | '+r.prioridade.toUpperCase():''}`,
+      doc:{saud:'Olá, equipe de compras!',intro:'Segue requisição de compra direta (sem cotação) de materiais de consumo. Por favor, providenciar a compra.',
+        blocks:[{h:'Resumo',hl:true,rows:[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Título',r.item],['Quantidade de materiais',String(L.length)],['Aplicação',r.local],['Precisa na obra até',r.dataNecessaria?fmtDY(r.dataNecessaria):''],['Prioridade',(r.prioridade||'Normal').toUpperCase()],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto],['Solicitante',r.solicitante||meNome()]]},
+          {h:'Materiais',table:{head:['Material','Qtd','Un','Especificação'],rows:L.map(l=>[l.nome,numTxt(l.qtd),l.un,l.espec])}},
+          ...(r.fornecedor||r.telefone?[{h:'Fornecedor preferencial',rows:[['Fornecedor',r.fornecedor],['Telefone / WhatsApp',r.telefone]]}]:[]),
+          ...(r.obs?[{h:'Observações',text:r.obs}]:[]),
+          {h:'O que precisamos de você',steps:['Comprar os materiais acima (pode ser similar, salvo indicação em contrário).','Responder este e-mail com o nº do pedido, o valor e a previsão de entrega.']}]},
+      onOpen:()=>{if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{})}});}
   const sol=r.solId&&byId('solicitacoes',r.solId);MAIL_ANX=(sol&&sol.anexos)||[];
   openMail({title:'Enviar requisição de compra',subject:`[REQUISIÇÃO DE COMPRA ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item} | ${r.fornecedor||''} | EMITIR PEDIDO`,
     doc:{saud:'Olá, equipe de compras!',intro:`Segue requisição de compra: a cotação abaixo foi aprovada pela Arquitetura. Por favor, emitir o pedido de compra.`,
@@ -1693,9 +1702,10 @@ function escolherNova(){
   MODAL_CTX=null;
   openModal({title:'Nova solicitação de cotação',sub:esc(obraNomeCod(UI.obra)),body:`<div class="choose">
     <button type="button" class="chc" data-ch="item"><b>Item com especificação</b><small>Um produto com modelo, cor, medidas e projeto. Ex.: porcelanato, luminária, bancada.</small></button>
-    <button type="button" class="chc" data-ch="lista"><b>📋 Lista de materiais</b><small>Vários itens pequenos numa solicitação só, com quantidades. Ex.: pincel, fita crepe, lixa.</small></button></div>`,
+    <button type="button" class="chc" data-ch="lista"><b>📋 Lista de materiais (com cotação)</b><small>Vários itens numa solicitação só, para o compras cotar antes.</small></button>
+    <button type="button" class="chc" data-ch="direta"><b>⚡ Requisição direta (sem cotação)</b><small>Material de consumo: pincel, fita crepe, lixa… vai direto como requisição de compra.</small></button></div>`,
     buttons:[{l:'Fechar',cls:'ghost',fn:closeModal}]});
-  $('#modal').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{closeModal();b.dataset.ch==='lista'?openLista():openSol()});
+  $('#modal').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{closeModal();const k=b.dataset.ch;if(k==='direta'){UI.view='requisicoes';saveUI();render();openReqDireta()}else k==='lista'?openLista():openSol()});
 }
 const F_LISTA=[
  {s:'Lista'},
@@ -1709,17 +1719,47 @@ const F_LISTA=[
  {k:'cotValor',l:'Valor total cotado (R$)',t:'money'},{k:'cotPrazo',l:'Prazo de entrega (dias)',t:'number'},
  {k:'cotPagamento',l:'Condição de pagamento',w:2},{k:'cotObs',l:'Registro do contato',t:'area',w:2}];
 const catFind=n=>S.catalogo.find(c=>String(c.nome||'').toLowerCase()===String(n||'').trim().toLowerCase());
+/* editor de linhas de materiais (usado na lista de cotação e na requisição direta) */
+function linesHTML(){
+  return `<div class="sec" style="margin-top:16px">Materiais <span class="mut" style="text-transform:none;letter-spacing:0">(<span id="lcount">0</span>)</span></div>
+    ${ARQ?`<div class="ltools"><button type="button" class="btn sm" data-lcat>📋 Adicionar do catálogo</button><button type="button" class="btn sm" data-lsavecat>☆ Salvar novos no catálogo</button></div><div id="lpick"></div>`:''}
+    <div class="ltw"><table class="lt"><thead><tr><th>#</th><th>Material</th><th>Qtd</th><th>Un</th><th>Especificação</th><th></th></tr></thead><tbody id="lrows"></tbody></table></div>
+    ${ARQ?'<button type="button" class="btn sm" data-ladd style="margin-top:8px">+ linha</button> <span class="mut" style="font-size:12.5px">dica: Enter na última linha cria outra</span>':''}
+    <datalist id="dl-cat">${S.catalogo.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>`;
+}
+function bindLines(m){
+  const ro=ARQ?'':' disabled';
+  if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});
+  const readLines=()=>{const rows=[...m.querySelectorAll('#lrows tr')];if(!rows.length)return;MODAL_CTX.linhas=rows.map(tr=>({nome:tr.querySelector('[data-l=nome]').value.trim(),qtd:parseNum(tr.querySelector('[data-l=qtd]').value),un:tr.querySelector('[data-l=un]').value,espec:tr.querySelector('[data-l=espec]').value.trim()}))};
+  const drawLines=()=>{m.querySelector('#lrows').innerHTML=MODAL_CTX.linhas.map((l,i)=>`<tr><td class="ln">${i+1}</td><td><input data-l="nome" list="dl-cat" value="${esc(l.nome)}" placeholder="Material"${ro}></td><td style="width:74px"><input data-l="qtd" inputmode="decimal" value="${esc(numTxt(l.qtd))}" placeholder="0"${ro}></td><td style="width:74px"><select data-l="un"${ro}>${UNS.map(u=>`<option${(l.un||'un')===u?' selected':''}>${u}</option>`).join('')}</select></td><td><input data-l="espec" value="${esc(l.espec||'')}" placeholder="marca, cor, tamanho…"${ro}></td><td style="width:34px">${ARQ?`<button type="button" class="ib" data-ldel="${i}" title="Remover">×</button>`:''}</td></tr>`).join('');m.querySelector('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length};
+  m.addEventListener('click',e=>{
+    const dl=e.target.closest('[data-ldel]');if(dl){readLines();MODAL_CTX.linhas.splice(+dl.dataset.ldel,1);if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();return}
+    if(e.target.closest('[data-ladd]')){readLines();MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();const ins=m.querySelectorAll('[data-l=nome]');ins[ins.length-1].focus();return}
+    if(e.target.closest('[data-lcat]')){readLines();const box=m.querySelector('#lpick');if(box.innerHTML){box.innerHTML='';return}
+      const byCat={};S.catalogo.forEach(c=>{const k=c.categoria||'Outros';(byCat[k]=byCat[k]||[]).push(c)});
+      box.innerHTML=S.catalogo.length?`<div class="pick"><input type="search" id="pkq" placeholder="Filtrar catálogo…"><div class="pkl">${Object.keys(byCat).sort().map(k=>`<div class="pkh">${esc(k)}</div>`+byCat[k].sort((a,b)=>String(a.nome).localeCompare(b.nome)).map(c=>`<label class="pki" data-n="${esc(String(c.nome).toLowerCase())}"><span>${esc(c.nome)}<small>${esc(join([c.un,c.espec]))}</small></span><input data-pkid="${esc(c.id)}" inputmode="decimal" placeholder="qtd"></label>`).join('')).join('')}</div><div style="text-align:right;margin-top:8px"><button type="button" class="btn sm pri" data-pkadd>Adicionar selecionados</button></div></div>`
+        :`<div class="pick mut">O catálogo está vazio. <button type="button" class="lnk" data-kit style="text-decoration:underline">Carregar kit de pintura sugerido</button> ou use “Salvar novos no catálogo” depois de digitar os materiais.</div>`;
+      const q=box.querySelector('#pkq');if(q)q.oninput=()=>box.querySelectorAll('.pki').forEach(x=>x.style.display=x.dataset.n.includes(q.value.toLowerCase())?'':'none');return}
+    if(e.target.closest('[data-kit]')){carregarKit().then(()=>{m.querySelector('#lpick').innerHTML='';m.querySelector('[data-lcat]').click()});return}
+    if(e.target.closest('[data-pkadd]')){readLines();let n=0;m.querySelector('#lpick').querySelectorAll('[data-pkid]').forEach(inp=>{const q=parseNum(inp.value);if(!q)return;const c=byId('catalogo',inp.dataset.pkid);if(!c)return;
+        const ex=MODAL_CTX.linhas.find(l=>l.nome.toLowerCase()===String(c.nome).toLowerCase());if(ex)ex.qtd=q;else MODAL_CTX.linhas.push({nome:c.nome,qtd:q,un:c.un||'un',espec:c.espec||''});n++});
+      if(MODAL_CTX.linhas.length>1)MODAL_CTX.linhas=MODAL_CTX.linhas.filter(l=>l.nome);
+      m.querySelector('#lpick').innerHTML='';drawLines();toast(n?`${n} materiais adicionados`:'Digite a quantidade dos itens que quer adicionar');return}
+    if(e.target.closest('[data-lsavecat]')){readLines();(async()=>{let n=0;const cat=(m.querySelector('[name=categoria]')||{}).value||'Outros';for(const l of MODAL_CTX.linhas){if(!l.nome||catFind(l.nome))continue;await put('catalogo',{id:uid(),nome:l.nome,un:l.un||'un',espec:l.espec||'',categoria:cat});n++}toast(n?`${n} ${n===1?'material salvo':'materiais salvos'} no catálogo`:'Todos já estão no catálogo')})();return}
+  });
+  m.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.l==='nome'){const c=catFind(t.value);if(c){const tr=t.closest('tr');const u=tr.querySelector('[data-l=un]'),sp=tr.querySelector('[data-l=espec]');u.value=c.un||u.value;if(!sp.value)sp.value=c.espec||''}}readLines();m.querySelector('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length});
+  m.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.dataset&&t.dataset.l){e.preventDefault();const tr=t.closest('tr');if(!tr.nextElementSibling){m.querySelector('[data-ladd]').click()}else tr.nextElementSibling.querySelector('[data-l=nome]').focus()}});
+  drawLines();
+  return {readLines};
+}
 function openLista(s,target){
   const isNew=!s;
   if(isNew)s={id:uid(),obra:UI.obra,tipo:'lista',status:'nova',prioridade:'Normal',categoria:'Pintura',criadoEm:nowISO(),solicitante:meNome(),criadoPor:ME,hist:[],itens:[]};
   const st=s.status;
   MODAL_CTX={linhas:(s.itens||[]).map(l=>Object.assign({},l))};
-  if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});
-  const readLines=()=>{const rows=[...document.querySelectorAll('#lrows tr')];if(!rows.length)return;MODAL_CTX.linhas=rows.map(tr=>({nome:tr.querySelector('[data-l=nome]').value.trim(),qtd:parseNum(tr.querySelector('[data-l=qtd]').value),un:tr.querySelector('[data-l=un]').value,espec:tr.querySelector('[data-l=espec]').value.trim()}))};
-  const ro=ARQ?'':' disabled';
-  const drawLines=()=>{$('#lrows').innerHTML=MODAL_CTX.linhas.map((l,i)=>`<tr><td class="ln">${i+1}</td><td><input data-l="nome" list="dl-cat" value="${esc(l.nome)}" placeholder="Material"${ro}></td><td style="width:74px"><input data-l="qtd" inputmode="decimal" value="${esc(numTxt(l.qtd))}" placeholder="0"${ro}></td><td style="width:74px"><select data-l="un"${ro}>${UNS.map(u=>`<option${(l.un||'un')===u?' selected':''}>${u}</option>`).join('')}</select></td><td><input data-l="espec" value="${esc(l.espec||'')}" placeholder="marca, cor, tamanho…"${ro}></td><td style="width:34px">${ARQ?`<button type="button" class="ib" data-ldel="${i}" title="Remover">×</button>`:''}</td></tr>`).join('');$('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length};
+  let LN=null;
   const save=async(f,newSt,strict)=>{
-    readLines();
+    LN.readLines();
     const o=Object.assign({},byId('solicitacoes',s.id)||s,readForm(F_LISTA,f),{tipo:'lista',itens:MODAL_CTX.linhas.filter(l=>l.nome)});
     if(newSt&&newSt!=='cancelada'&&newSt!=='nova')strict=true;
     let miss=strict?missing(F_LISTA,o).concat(faltando(o).filter(x=>x!=='Categoria')):(o.item?[]:['Título da lista']);
@@ -1745,32 +1785,46 @@ function openLista(s,target){
   const flow=st==='cancelada'?'<div class="tools"><span class="pill p-red">Cancelada</span></div>':`<div class="flow">${SOL_FLOW.map((k,i)=>`<div class="fs ${SOL_FLOW.indexOf(st)>=i?'done':''} ${k===st?'cur':''}"><i>${i+1}</i>${SOL_ST[k].l}</div>`).join('')}</div>`;
   const fl=F_LISTA.findIndex(f=>f.s==='Fornecedor indicado (opcional)');
   openModal({title:isNew?'Nova lista de materiais':esc(join([s.numero,s.item],' — ')),sub:esc(obraNomeCod(s.obra))+' · solicitação de cotação em lista',
-    body:flow+(isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button></div>`)+formHTML(F_LISTA.slice(0,fl),s)+
-      `<div class="sec" style="margin-top:16px">Materiais <span class="mut" style="text-transform:none;letter-spacing:0">(<span id="lcount">0</span>)</span></div>
-      ${ARQ?`<div class="ltools"><button type="button" class="btn sm" data-lcat>📋 Adicionar do catálogo</button><button type="button" class="btn sm" data-lsavecat>☆ Salvar novos no catálogo</button></div><div id="lpick"></div>`:''}
-      <div class="ltw"><table class="lt"><thead><tr><th>#</th><th>Material</th><th>Qtd</th><th>Un</th><th>Especificação</th><th></th></tr></thead><tbody id="lrows"></tbody></table></div>
-      ${ARQ?'<button type="button" class="btn sm" data-ladd style="margin-top:8px">+ linha</button> <span class="mut" style="font-size:12.5px">dica: Enter na última linha cria outra</span>':''}
-      <datalist id="dl-cat">${S.catalogo.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>`+formHTML(F_LISTA.slice(fl),s),buttons:b});
-  MODAL_CTX.spec=F_LISTA;MODAL_CTX.msg=v=>{readLines();return quoteMsg(Object.assign({},s,v,{tipo:'lista',itens:MODAL_CTX.linhas}))};
-  drawLines();
-  const m=$('#mform');
-  m.addEventListener('click',e=>{
-    const dl=e.target.closest('[data-ldel]');if(dl){readLines();MODAL_CTX.linhas.splice(+dl.dataset.ldel,1);if(!MODAL_CTX.linhas.length)MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();return}
-    if(e.target.closest('[data-ladd]')){readLines();MODAL_CTX.linhas.push({nome:'',qtd:null,un:'un',espec:''});drawLines();const ins=m.querySelectorAll('[data-l=nome]');ins[ins.length-1].focus();return}
-    if(e.target.closest('[data-lcat]')){readLines();const box=$('#lpick');if(box.innerHTML){box.innerHTML='';return}
-      const byCat={};S.catalogo.forEach(c=>{const k=c.categoria||'Outros';(byCat[k]=byCat[k]||[]).push(c)});
-      box.innerHTML=S.catalogo.length?`<div class="pick"><input type="search" id="pkq" placeholder="Filtrar catálogo…"><div class="pkl">${Object.keys(byCat).sort().map(k=>`<div class="pkh">${esc(k)}</div>`+byCat[k].sort((a,b)=>String(a.nome).localeCompare(b.nome)).map(c=>`<label class="pki" data-n="${esc(String(c.nome).toLowerCase())}"><span>${esc(c.nome)}<small>${esc(join([c.un,c.espec]))}</small></span><input data-pkid="${esc(c.id)}" inputmode="decimal" placeholder="qtd"></label>`).join('')).join('')}</div><div style="text-align:right;margin-top:8px"><button type="button" class="btn sm pri" data-pkadd>Adicionar selecionados</button></div></div>`
-        :`<div class="pick mut">O catálogo está vazio. <button type="button" class="lnk" data-kit style="text-decoration:underline">Carregar kit de pintura sugerido</button> ou use “Salvar novos no catálogo” depois de digitar os materiais.</div>`;
-      const q=$('#pkq');if(q)q.oninput=()=>box.querySelectorAll('.pki').forEach(x=>x.style.display=x.dataset.n.includes(q.value.toLowerCase())?'':'none');return}
-    if(e.target.closest('[data-kit]')){carregarKit().then(()=>{$('#lpick').innerHTML='';m.querySelector('[data-lcat]').click()});return}
-    if(e.target.closest('[data-pkadd]')){readLines();let n=0;$('#lpick').querySelectorAll('[data-pkid]').forEach(inp=>{const q=parseNum(inp.value);if(!q)return;const c=byId('catalogo',inp.dataset.pkid);if(!c)return;
-        const ex=MODAL_CTX.linhas.find(l=>l.nome.toLowerCase()===String(c.nome).toLowerCase());if(ex)ex.qtd=q;else MODAL_CTX.linhas.push({nome:c.nome,qtd:q,un:c.un||'un',espec:c.espec||''});n++});
-      MODAL_CTX.linhas=MODAL_CTX.linhas.filter(l=>l.nome||MODAL_CTX.linhas.length===1);if(MODAL_CTX.linhas.length>1)MODAL_CTX.linhas=MODAL_CTX.linhas.filter(l=>l.nome);
-      $('#lpick').innerHTML='';drawLines();toast(n?`${n} materiais adicionados`:'Digite a quantidade dos itens que quer adicionar');return}
-    if(e.target.closest('[data-lsavecat]')){readLines();(async()=>{let n=0;const cat=(m.querySelector('[name=categoria]')||{}).value||'Outros';for(const l of MODAL_CTX.linhas){if(!l.nome||catFind(l.nome))continue;await put('catalogo',{id:uid(),nome:l.nome,un:l.un||'un',espec:l.espec||'',categoria:cat});n++}toast(n?`${n} ${n===1?'material salvo':'materiais salvos'} no catálogo`:'Todos já estão no catálogo')})();return}
-  });
-  m.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.l==='nome'){const c=catFind(t.value);if(c){const tr=t.closest('tr');const u=tr.querySelector('[data-l=un]'),sp=tr.querySelector('[data-l=espec]');u.value=c.un||u.value;if(!sp.value)sp.value=c.espec||''}}readLines();$('#lcount').textContent=MODAL_CTX.linhas.filter(l=>l.nome).length});
-  m.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.dataset&&t.dataset.l){e.preventDefault();const tr=t.closest('tr');if(!tr.nextElementSibling){m.querySelector('[data-ladd]').click()}else tr.nextElementSibling.querySelector('[data-l=nome]').focus()}});
+    body:flow+(isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button></div>`)+formHTML(F_LISTA.slice(0,fl),s)+linesHTML()+formHTML(F_LISTA.slice(fl),s),buttons:b});
+  MODAL_CTX.spec=F_LISTA;MODAL_CTX.msg=v=>{LN.readLines();return quoteMsg(Object.assign({},s,v,{tipo:'lista',itens:MODAL_CTX.linhas}))};
+  LN=bindLines($('#mform'));
+}
+/* requisição direta (sem cotação) — materiais de consumo */
+const F_RDIR=[
+ {s:'Requisição direta'},
+ {k:'item',l:'Título',req:1,w:2,ph:'Ex.: Materiais de pintura geral'},
+ {k:'categoria',l:'Categoria (verba)',t:'select',o:CATS,req:1},{k:'local',l:'Aplicação / ambiente',ph:'Ex.: Pintura geral da torre'},
+ {k:'dataNecessaria',l:'Precisa na obra até',t:'date'},{k:'prioridade',l:'Prioridade',t:'select',o:['Normal','Alta','Urgente'],nb:1},
+ {k:'obs',l:'Observações',t:'area',w:2,ph:'Ex.: aceita similar; entregar no almoxarifado…'},
+ {s:'Fornecedor e entrega'},
+ {k:'fornecedor',l:'Fornecedor preferencial (opcional)'},{k:'telefone',l:'Telefone / WhatsApp',t:'tel'},
+ {k:'localEntrega',l:'Local de entrega'},{k:'centroCusto',l:'Centro de custo'},
+ {s:'Pedido (compras)'},
+ {k:'valorTotal',l:'Valor total (R$)',t:'money'},{k:'pagamento',l:'Condição de pagamento'},
+ {k:'previsaoEntrega',l:'Previsão de entrega',t:'date'},{k:'pedidoNum',l:'Nº do pedido (ERP)'},
+ {k:'status',l:'Status',t:'select',o:Object.keys(REQ_ST),ol:REQ_ST,nb:1}];
+function openReqDireta(r){
+  const isNew=!r;
+  if(isNew)r={id:uid(),obra:UI.obra,tipo:'lista',direta:true,status:'ativa',prioridade:'Normal',categoria:'Pintura',localEntrega:'Obra '+obraNomeCod(UI.obra),criadoEm:nowISO(),solicitante:meNome(),criadoPor:ME,itens:[]};
+  MODAL_CTX={linhas:(r.itens||[]).map(l=>Object.assign({},l))};
+  let LN=null;
+  const save=async f=>{
+    LN.readLines();
+    const o=Object.assign({},byId('requisicoes',r.id)||r,readForm(F_RDIR,f),{tipo:'lista',direta:true,itens:MODAL_CTX.linhas.filter(l=>l.nome)});
+    const miss=missing(F_RDIR,o);if(!o.itens.length)miss.push('Materiais');else if(o.itens.some(l=>!l.qtd))miss.push('Quantidades');
+    if(miss.length){toast('Falta preencher: '+miss.join(', '));return null}
+    if(!o.numero)o.numero=nextNum('requisicoes','REQ',o.obra);
+    await put('requisicoes',o);return o;
+  };
+  const b=[];
+  if(ARQ&&!isNew)b.push({l:'Excluir',cls:'ghost danger',confirm:'Confirmar exclusão',fn:async()=>{await del('requisicoes',r.id);closeModal();toast('Requisição excluída')}});
+  if(ARQ){b.push({l:'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();toast(`${o.numero} salva`)}}});
+    b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{const o=await save(f);if(o){closeModal();UI.view='requisicoes';saveUI();render();mailReq(o)}}});}
+  else b.push({l:'Fechar',cls:'ghost',fn:closeModal});
+  const fl=F_RDIR.findIndex(f=>f.s==='Fornecedor e entrega');
+  openModal({title:isNew?'Nova requisição direta':esc(join([r.numero,r.item],' — ')),sub:esc(obraNomeCod(r.obra))+' · requisição de compra sem cotação (materiais de consumo)',
+    body:formHTML(F_RDIR.slice(0,fl),r)+linesHTML()+formHTML(F_RDIR.slice(fl),r),buttons:b});
+  LN=bindLines($('#mform'));
 }
 async function carregarKit(){let n=0;for(const[nome,un]of KIT_PINTURA){if(catFind(nome))continue;await put('catalogo',{id:uid(),nome,un,espec:'',categoria:'Pintura'});n++}toast(n?`${n} materiais de pintura adicionados ao catálogo`:'O kit já está no catálogo');}
 function openCatalogo(){
@@ -1902,6 +1956,7 @@ function reqText(r){
     .filter((x,i,a)=>x!==''||(i>0&&a[i-1]!=='')).join('\n').trim();
 }
 function openReq(r){
+  if(r&&r.direta)return openReqDireta(r);
   const sol=r.solId&&byId('solicitacoes',r.solId);
   const b=[];
   if(ARQ)b.push({l:'Excluir',cls:'ghost danger',confirm:'Excluir e voltar p/ aprovada?',fn:async()=>{
@@ -1940,7 +1995,7 @@ document.addEventListener('click',e=>{
     if(e.target.closest('[data-lmode]')){LMODE=LMODE==='criar'?'entrar':'criar';render();return}
   if(e.target.closest('[data-logout]')){firebase.auth().signOut();return}
   if(e.target.closest('.me'))return openCfg();
-  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo],[data-verpor],[data-catalogo]');
+  const t=e.target.closest('[data-obra],[data-newobra],[data-editobra],[data-view],[data-newsol],[data-solfrom],[data-cron],[data-sol],[data-req],[data-chip],[data-go],[data-opensol],[data-adv],[data-mailsol],[data-mailreq],[data-mailbatch],[data-cfg],[data-clearq],[data-focusadd],[data-stage],[data-cview],[data-allcats],[data-pack],[data-addgrp],[data-tog],[data-area],[data-jump],[data-gup],[data-gdown],[data-gedit],[data-sup],[data-sdown],[data-novogrupo],[data-verpor],[data-catalogo],[data-newreqd]');
   if(!t)return;
   const d=t.dataset;
   if('cfg' in d)return openCfg();
@@ -1972,6 +2027,7 @@ document.addEventListener('click',e=>{
   if(d.adv){const s=byId('solicitacoes',d.adv);if(s)moveSol(s.id,SOL_FLOW[SOL_FLOW.indexOf(s.status)+1]);return}
   if('newsol' in d)return escolherNova();
   if('catalogo' in d)return openCatalogo();
+  if('newreqd' in d)return openReqDireta();
   if(d.solfrom)return openSol(null,byId('cronograma',d.solfrom));
   if(d.opensol)return openSol(byId('solicitacoes',d.opensol));
   if(d.cron)return openCron(byId('cronograma',d.cron));
