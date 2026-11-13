@@ -1298,7 +1298,7 @@ function solBoard(){
     const novas=k==='nova'?arr.filter(s=>!s.emailEm).length:0;
     return `<div class="col" data-col="${k}">
       <div class="colh"><div><span class="dot" style="background:${st.d}"></span><b>${st.l}</b><em>${arr.length}</em></div></div>
-      ${k==='nova'&&ARQ?`<div class="colx"><button class="btn sm" data-newsol>+ Nova</button>${arr.length?`<button class="btn sm pri" data-mailbatch>✉ Enviar ${novas||arr.length}</button>`:''}</div>`:''}
+      ${k==='nova'&&ARQ?`<div class="colx"><button class="btn sm" data-newsol>+ Nova</button>${arr.length?`<button class="btn sm pri" data-mailbatch>📊 Excel (${novas||arr.length})</button>`:''}</div>`:''}
       ${arr.length?arr.map(solCard).join(''):'<div class="kempty">Arraste para cá</div>'}
     </div>`}).join('')}</div>`;
 }
@@ -1311,8 +1311,8 @@ function solCard(s){
     ${SOL_OPEN.includes(s.status)&&faltando(s).length?`<div class="inc">Falta: ${esc(faltando(s).join(', '))}</div>`:''}${s.cotValor&&s.categoria&&SOL_OPEN.includes(s.status)&&(()=>{const v=verbaOf(s.obra,s.categoria,s.id);return v.lim&&v.saldo-s.cotValor<0})()?`<div class="inc">⚠ Estoura a verba de ${esc(s.categoria)}</div>`:''}${(s.anexos||[]).length?`<div class="m">📎 ${s.anexos.length} anexo${s.anexos.length>1?'s':''}</div>`:''}
     <div class="m">${s.fornecedor?esc(s.fornecedor):'<i>Sem fornecedor indicado</i>'}</div>
     <div class="kf"><span class="${s.dataNecessaria&&daysTo(s.dataNecessaria)<7&&SOL_OPEN.includes(s.status)?'calc soon':'m'}" style="padding:0!important;margin:0">${s.dataNecessaria?'Em obra '+fmtD(s.dataNecessaria):''}</span>
-      <span class="bt">${s.cotValor?`<span class="v">${money(s.cotValor)}</span>`:''}${isCompras()?'':`<button class="ib" data-mailsol="${esc(s.id)}" title="Enviar por e-mail">✉</button>`}${nx&&canWrite&&(!isCompras()||['contato','cotada'].includes(nx))?`<button class="ib y" data-adv="${esc(s.id)}" title="Avançar para ${SOL_ST[nx].l}">→</button>`:''}</span></div>
-    ${s.emailEm?`<div class="sent">✓ E-mail gerado ${fmtD(String(s.emailEm).slice(0,10))}</div>`:''}
+      <span class="bt">${s.cotValor?`<span class="v">${money(s.cotValor)}</span>`:''}${isCompras()?'':`<button class="ib" data-mailsol="${esc(s.id)}" title="Gerar Excel">📊</button>`}${nx&&canWrite&&(!isCompras()||['contato','cotada'].includes(nx))?`<button class="ib y" data-adv="${esc(s.id)}" title="Avançar para ${SOL_ST[nx].l}">→</button>`:''}</span></div>
+    ${s.emailEm?`<div class="sent">✓ Excel gerado ${fmtD(String(s.emailEm).slice(0,10))}</div>`:''}
   </div>`;
 }
 async function moveSol(id,to){
@@ -1345,7 +1345,7 @@ function reqTable(){
     <td style="width:140px"><input class="cell" type="date" data-f="previsaoEntrega" value="${esc(r.previsaoEntrega||'')}"${ro}></td>
     <td style="width:130px"><select class="cell" data-f="status"${ro}>${Object.keys(REQ_ST).map(k=>`<option value="${k}"${r.status===k?' selected':''}>${REQ_ST[k].l}</option>`).join('')}</select></td>
     <td style="width:130px"><input class="cell" data-f="pedidoNum" value="${esc(r.pedidoNum||'')}" placeholder="—"${ro}></td>
-    <td class="act">${isCompras()?'':`<button class="ib ${r.emailEm?'':'y'}" data-mailreq="${esc(r.id)}" title="Enviar por e-mail">✉</button> `}<button class="ib" data-req="${esc(r.id)}" title="Detalhes">⋯</button></td>
+    <td class="act">${isCompras()?'':`<button class="ib ${r.emailEm?'':'y'}" data-mailreq="${esc(r.id)}" title="Gerar Excel">📊</button> `}<button class="ib" data-req="${esc(r.id)}" title="Detalhes">⋯</button></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -1585,7 +1585,7 @@ function solBlocks(s,withResumo){
   return B;
 }
 const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e cotar exatamente com estas especificações.','Retornar a cotação respondendo este e-mail: valor total, prazo de entrega e condição de pagamento.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
-function mailSol(s){
+function mailSolEmail(s){
   if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes de enviar: '+faltando(s).join(', '));return}
   MAIL_ANX=(s.anexos||[]);
   const pz=prazoTxt(s);
@@ -1595,7 +1595,7 @@ function mailSol(s){
     onOpen:()=>{if(canWrite)patch('solicitacoes',s.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
 let MAIL_ANX=[],VB_OK=null;
-function mailBatch(){
+function mailBatchEmail(){
   const arr=S.solicitacoes.filter(s=>s.obra===UI.obra&&s.status==='nova');
   const ok=arr.filter(s=>!faltando(s).length),inc=arr.length-ok.length;
   const pend=ok.filter(s=>!s.emailEm);const list=(pend.length?pend:ok).sort((a,b)=>(prazoTxt(a)?(a.dataNecessaria||''):'9').localeCompare(prazoTxt(b)?(b.dataNecessaria||''):'9'));
@@ -1611,7 +1611,7 @@ function mailBatch(){
     doc:{saud:'Olá, equipe de compras!',intro:`Seguem ${n} novas solicitações de cotação da Arquitetura para a obra ${obraNomeCod(UI.obra)}. A lista abaixo está em ordem de prazo.`,blocks},
     onOpen:async()=>{if(!canWrite)return;for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}}});
 }
-function mailReq(r){
+function mailReqEmail(r){
   if(r.direta){MAIL_ANX=[];const L=(r.itens||[]).filter(l=>l.nome);
     return openMail({title:'Enviar requisição de compra',subject:`[REQUISIÇÃO DE COMPRA ARQ] ${obraCod(r.obra)||obraNome(r.obra)} | ${r.numero} | ${r.item}${r.dataNecessaria?' | na obra até '+fmtD(r.dataNecessaria):''}${r.prioridade&&r.prioridade!=='Normal'?' | '+r.prioridade.toUpperCase():''}`,
       doc:{saud:'Olá, equipe de compras!',intro:'Segue requisição de compra direta (sem cotação) de materiais de consumo. Por favor, providenciar a compra.',
@@ -1634,6 +1634,85 @@ function mailReq(r){
     onOpen:()=>{if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
 
+/* ---------- Excel para o compras ---------- */
+async function xlsLib(){if(!window.ExcelJS)await loadScript('lib/exceljs.min.js');return window.ExcelJS}
+const OL='FF5F5E42',SAND='FFF4EFE4',YEL='FFFFF4CC',LINE='FFD9CFBC';
+const brd={top:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:LINE}},bottom:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}};
+function xlsHeader(ws,titulo,info,ncols){
+  ws.mergeCells(1,1,1,ncols);const t=ws.getCell(1,1);t.value='ABSOLUTA CONSTRUTORA · ARQUITETURA';t.font={bold:true,size:11,color:{argb:'FF8A6F4D'}};
+  ws.mergeCells(2,1,2,ncols);const h=ws.getCell(2,1);h.value=titulo;h.font={bold:true,size:16,color:{argb:OL}};ws.getRow(2).height=24;
+  let r=4;info.filter(x=>x[1]!=null&&x[1]!=='').forEach(([k,v])=>{const a=ws.getCell(r,1),b=ws.getCell(r,2);a.value=k;a.font={bold:true,color:{argb:'FF6B6557'}};ws.mergeCells(r,2,r,Math.min(ncols,6));b.value=v;b.alignment={wrapText:true,vertical:'top'};if(/Prioridade/.test(k)&&/URGENTE|ALTA/.test(v))b.font={bold:true,color:{argb:'FFA8473A'}};r++});
+  return r+1;
+}
+function xlsTable(ws,r0,cols,rows,opts={}){
+  const hr=ws.getRow(r0);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c.h;cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:c.compras?'FFA98B66':OL}};cell.alignment={wrapText:true,vertical:'middle'};cell.border=brd;ws.getColumn(i+1).width=Math.max(ws.getColumn(i+1).width||0,c.w||14)});hr.height=32;
+  rows.forEach((row,ri)=>{const rr=ws.getRow(r0+1+ri);cols.forEach((c,i)=>{const cell=rr.getCell(i+1);let v=row[c.k];
+    if(c.f)v={formula:c.f(r0+1+ri)};
+    if(v&&typeof v==='object'&&v.link){cell.value={text:v.text,hyperlink:v.link};cell.font={color:{argb:'FF2B6CB0'},underline:true}}else cell.value=v==null?'':v;
+    cell.alignment={wrapText:true,vertical:'top'};cell.border=brd;if(c.money)cell.numFmt='"R$" #,##0.00';
+    if(c.compras)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:YEL}};else if(ri%2)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFBF8F2'}}});});
+  ws.views=[{state:'frozen',ySplit:r0}];
+  return r0+1+rows.length;
+}
+async function xlsDownload(wb,nome){
+  const buf=await wb.xlsx.writeBuffer();const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.xlsx';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+function solLinhas(s){
+  const base={sol:s.numero,obra:obraNomeCod(s.obra),prazo:prazoTxt(s),prio:s.prioridade||'Normal',forn:s.fornecedor||'',cont:join([s.contato,s.telefone,s.email]),amb:s.local||''};
+  const pj=[s.referencia,...(s.anexos||[]).map(a=>a.url)].filter(Boolean);
+  if(s.tipo==='lista')return (s.itens||[]).filter(l=>l.nome).map(l=>Object.assign({},base,{prod:l.nome,mod:l.espec||'',cor:'',med:'',qtd:l.qtd,un:l.un,obs:s.especificacao||'',pj:''}));
+  return [Object.assign({},base,{prod:s.item,mod:join([s.modelo,s.marca],' · '),cor:s.acabamento||'',med:s.dimensoes||'',qtd:s.qtd,un:s.un,obs:join([s.especificacao,s.fornecedoresAlt?'Outras indicações: '+s.fornecedoresAlt:''],' | '),pj:pj.length?{text:pj.length>1?`${pj.length} arquivos/links`:'abrir',link:pj[0]}:''})];
+}
+async function xlsSol(list){
+  const X=await xlsLib();if(!X){toast('Não foi possível carregar o gerador de Excel.');return}
+  const wb=new X.Workbook();wb.creator='Arquitetura · Absoluta';
+  const ws=wb.addWorksheet('Cotação',{pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
+  const obra=list[0].obra,mult=list.length>1;
+  const cols=[{h:'Nº',k:'n',w:5},...(mult?[{h:'Solicitação',k:'sol',w:15}]:[]),{h:'Produto / material',k:'prod',w:30},{h:'Modelo / referência',k:'mod',w:28},{h:'Cor e características',k:'cor',w:24},{h:'Medidas',k:'med',w:16},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6},{h:'Ambiente / aplicação',k:'amb',w:20},...(mult?[{h:'Na obra até',k:'prazo',w:12},{h:'Prioridade',k:'prio',w:11}]:[]),{h:'Fornecedor indicado',k:'forn',w:20},{h:'Contato',k:'cont',w:22},{h:'Projeto',k:'pj',w:12},{h:'Observações',k:'obs',w:28},
+    {h:'Fornecedor cotado',k:'fc',w:20,compras:true},{h:'Valor unitário (R$)',k:'vu',w:14,compras:true,money:true},{h:'Valor total (R$)',k:'vt',w:15,compras:true,money:true},{h:'Prazo entrega (dias)',k:'pe',w:12,compras:true},{h:'Cond. pagamento',k:'cp',w:16,compras:true}];
+  const iq=cols.findIndex(c=>c.k==='qtd')+1,iu=cols.findIndex(c=>c.k==='vu')+1;const L=n=>String.fromCharCode(64+n);
+  cols.find(c=>c.k==='vt').f=r=>`IF(${L(iu)}${r}="","",${L(iq)}${r}*${L(iu)}${r})`;
+  const rows=list.flatMap(solLinhas).map((x,i)=>Object.assign(x,{n:i+1}));
+  const s0=list[0];
+  const info=mult?[['Obra',obraNomeCod(obra)],['Solicitações',list.map(s=>s.numero).join(', ')],['Data',fmtDY(iso(today()))],['Solicitante',meNome()]]
+    :[['Obra',obraNomeCod(obra)],['Solicitação de cotação',s0.numero],[s0.tipo==='lista'?'Lista':'Item',s0.item],['Data',fmtDY(iso(today()))],['Solicitante',s0.solicitante||meNome()],['Precisa na obra até',prazoTxt(s0)],['Prioridade',(s0.prioridade||'Normal').toUpperCase()]];
+  let r=xlsHeader(ws,'SOLICITAÇÃO DE COTAÇÃO',info,cols.length);
+  const nota=ws.getCell(r-1,1);nota.value='Colunas em amarelo: preencher com a cotação (fornecedor, valor unitário, prazo e pagamento). O total é calculado automaticamente.';nota.font={italic:true,size:9,color:{argb:'FF8A6F4D'}};
+  const end=xlsTable(ws,r,cols,rows);
+  const tr=ws.getRow(end);const ivt=cols.findIndex(c=>c.k==='vt')+1;tr.getCell(ivt-1).value='TOTAL';tr.getCell(ivt-1).font={bold:true};const tc=tr.getCell(ivt);tc.value={formula:`SUM(${L(ivt)}${r+1}:${L(ivt)}${end-1})`};tc.numFmt='"R$" #,##0.00';tc.font={bold:true};
+  await xlsDownload(wb,mult?`${obraCod(obra)||obraNome(obra)} - Cotação - ${list.length} solicitações - ${fmtDY(iso(today())).replace(/\//g,'-')}`:`${obraCod(obra)||obraNome(obra)} - ${s0.numero} - ${s0.item}`);
+  if(canWrite)for(const s of list){try{await patch('solicitacoes',s.id,{emailEm:nowISO()})}catch(e){}}
+  toast(`Excel gerado${mult?` com ${list.length} solicitações`:''} — é só enviar o arquivo para o compras.`);
+}
+async function xlsReq(r){
+  const X=await xlsLib();if(!X){toast('Não foi possível carregar o gerador de Excel.');return}
+  const wb=new X.Workbook();const ws=wb.addWorksheet('Requisição',{pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
+  const cols=[{h:'Nº',k:'n',w:5},{h:'Material / item',k:'prod',w:34},{h:'Especificação',k:'esp',w:36},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6},{h:'Valor unitário (R$)',k:'vu',w:15,money:true,compras:true},{h:'Valor total (R$)',k:'vt',w:15,money:true,compras:true}];
+  const L=n=>String.fromCharCode(64+n);
+  const itens=(r.itens||[]).filter(l=>l.nome);
+  let rows;
+  if(itens.length){rows=itens.map((l,i)=>({n:i+1,prod:l.nome,esp:l.espec||'',qtd:l.qtd,un:l.un}));cols[6].f=x=>`IF(F${x}="","",D${x}*F${x})`}
+  else rows=[{n:1,prod:r.item,esp:r.especificacao||'',qtd:r.qtd,un:r.un,vu:r.qtd&&r.valorTotal?Math.round(r.valorTotal/r.qtd*100)/100:'',vt:r.valorTotal||''}];
+  const info=[['Obra',obraNomeCod(r.obra)],['Requisição de compra',r.numero],['Tipo',r.direta?'Direta (sem cotação) — material de consumo':'Cotação aprovada'],['Ref. solicitação',r.solNumero],['Título',r.item],['Data',fmtDY(String(r.criadoEm||'').slice(0,10))],['Solicitante',r.solicitante||meNome()],['Precisa na obra até',r.dataNecessaria?fmtDY(r.dataNecessaria):''],['Prioridade',r.prioridade&&r.prioridade!=='Normal'?r.prioridade.toUpperCase():''],
+    ['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',join([r.contato,r.telefone,r.email])],['Condição de pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto],['Nº pedido (ERP)',r.pedidoNum],['Observações',r.obs]];
+  let r0=xlsHeader(ws,'REQUISIÇÃO DE COMPRA',info,7);
+  const end=xlsTable(ws,r0,cols,rows);
+  const tr=ws.getRow(end);tr.getCell(6).value='TOTAL';tr.getCell(6).font={bold:true};const tc=tr.getCell(7);tc.value=itens.length?{formula:`SUM(G${r0+1}:G${end-1})`}:(r.valorTotal||'');tc.numFmt='"R$" #,##0.00';tc.font={bold:true};
+  await xlsDownload(wb,`${obraCod(r.obra)||obraNome(r.obra)} - ${r.numero} - ${r.item}`);
+  if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{});
+  toast('Excel da requisição gerado — é só enviar o arquivo para o compras.');
+}
+function mailSol(s){if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes: '+faltando(s).join(', '));return}xlsSol([s])}
+function mailBatch(){
+  const arr=S.solicitacoes.filter(s=>s.obra===UI.obra&&s.status==='nova');
+  const ok=arr.filter(s=>!faltando(s).length),inc=arr.length-ok.length;
+  const pend=ok.filter(s=>!s.emailEm);const list=(pend.length?pend:ok);
+  if(!list.length){toast('Nenhuma solicitação completa — confira o checklist.');return}
+  if(inc)setTimeout(()=>toast(`${inc} incompleta${inc>1?'s':''} ficou de fora.`),2500);
+  xlsSol(list);
+}
+function mailReq(r){xlsReq(r)}
 /* ---------- configurações ---------- */
 function openCfg(){
   MODAL_CTX=null;
@@ -1777,7 +1856,7 @@ function openLista(s,target){
     b.push({l:isNew?'Salvar rascunho':'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();toast(`${o.numero} salva`)}}});
     const NX={contato:['Marcar como cotada →','cotada'],cotada:['Aprovar cotação →','aprovada'],aprovada:['Gerar requisição de compra →','REQ'],cancelada:['Reabrir','nova']};
     if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
-    if(isNew||st==='nova')b.push({l:'Salvar e enviar para cotação ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
+    if(isNew||st==='nova')b.push({l:'Salvar e gerar Excel 📊',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
     if(!isNew&&st!=='nova'&&NX[st]){const[l,ns]=NX[st];b.push({l,cls:'pri',fn:async f=>{if(ns==='REQ'){const o=await save(f,null,'REQ');if(o)await gerarReq(o);return}const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
   }
   if(!isNew&&st==='requisitada'){const r=reqOf(s.id);if(r)b.push({l:'Ver requisição de compra →',cls:'dark',fn:()=>{closeModal();UI.view='requisicoes';saveUI();render();openReq(r)}})}
@@ -1819,7 +1898,7 @@ function openReqDireta(r){
   const b=[];
   if(ARQ&&!isNew)b.push({l:'Excluir',cls:'ghost danger',confirm:'Confirmar exclusão',fn:async()=>{await del('requisicoes',r.id);closeModal();toast('Requisição excluída')}});
   if(ARQ){b.push({l:'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();toast(`${o.numero} salva`)}}});
-    b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{const o=await save(f);if(o){closeModal();UI.view='requisicoes';saveUI();render();mailReq(o)}}});}
+    b.push({l:'Salvar e gerar Excel 📊',cls:'pri',fn:async f=>{const o=await save(f);if(o){closeModal();UI.view='requisicoes';saveUI();render();mailReq(o)}}});}
   else b.push({l:'Fechar',cls:'ghost',fn:closeModal});
   const fl=F_RDIR.findIndex(f=>f.s==='Fornecedor e entrega');
   openModal({title:isNew?'Nova requisição direta':esc(join([r.numero,r.item],' — ')),sub:esc(obraNomeCod(r.obra))+' · requisição de compra sem cotação (materiais de consumo)',
@@ -1902,7 +1981,7 @@ function openSol(s,cron,target){
     b.push({l:isNew?'Salvar rascunho':'Salvar',fn:async f=>{const o=await save(f);if(o){closeModal();const fl=faltando(o);toast(fl.length?`${o.numero} salva — falta: ${fl.join(', ')}`:(isNew?`Solicitação ${o.numero} criada`:'Salvo'))}}});
     const NX={nova:['Iniciar contato →','contato'],contato:['Marcar como cotada →','cotada'],cotada:['Aprovar cotação →','aprovada'],aprovada:['Gerar requisição de compra →','REQ'],cancelada:['Reabrir','nova']};
     if(target)NX[st]=[{cotada:'Salvar como cotada →',aprovada:'Salvar e aprovar →'}[target],target];
-    if(isNew||st==='nova')b.push({l:'Salvar e enviar para cotação ✉',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
+    if(isNew||st==='nova')b.push({l:'Salvar e gerar Excel 📊',cls:'pri',fn:async f=>{const o=await save(f,null,true);if(o){UI.view='solicitacoes';saveUI();closeModal();render();mailSol(o)}}});
     if(!isNew&&st!=='nova'&&NX[st]){const [l,ns]=NX[st];b.push({l,cls:'pri',fn:async f=>{
       if(ns==='REQ'){const o=await save(f,null,'REQ');if(o)await gerarReq(o);return}
       const o=await save(f,ns);if(o){closeModal();toast(`${o.numero}: ${SOL_ST[ns].l}`)}}})}
@@ -1912,7 +1991,7 @@ function openSol(s,cron,target){
   const flow=st==='cancelada'?`<div class="tools"><span class="pill p-red">Cancelada</span></div>`:
     `<div class="flow">${SOL_FLOW.map((k,i)=>`<div class="fs ${SOL_FLOW.indexOf(st)>=i?'done':''} ${k===st?'cur':''}"><i>${i+1}</i>${SOL_ST[k].l}</div>`).join('')}</div>`;
   const wa=waHref(s);
-  const tools=isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button>${wa?`<a class="btn sm wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp do fornecedor</a>`:''}${s.emailEm?`<span class="sent" style="margin:0;align-self:center">✓ E-mail p/ compras gerado ${fmtD(String(s.emailEm).slice(0,10))}</span>`:''}</div>`;
+  const tools=isNew?'':`<div class="tools"><button type="button" class="btn sm" data-copymsg>Copiar pedido de cotação p/ fornecedor</button>${wa?`<a class="btn sm wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp do fornecedor</a>`:''}${s.emailEm?`<span class="sent" style="margin:0;align-self:center">✓ Excel gerado ${fmtD(String(s.emailEm).slice(0,10))}</span>`:''}</div>`;
   const hist=(s.hist||[]).length?`<div class="hist">Histórico: ${s.hist.map(h=>`${esc((SOL_ST[h.st]||{}).l||h.st)} ${fmtD(String(h.em).slice(0,10))}`).join(' → ')}</div>`:'';
   openModal({
     title:isNew?'Nova solicitação de cotação':esc(join([s.numero,s.item],' — ')),
@@ -1966,12 +2045,12 @@ function openReq(r){
   if(canWrite)b.push({l:'Salvar',fn:async f=>{
     const o=Object.assign({},byId('requisicoes',r.id)||r,readForm(F_REQ,f));const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}
     await put('requisicoes',o);closeModal();toast('Requisição salva')}});
-  if(ARQ)b.push({l:'Salvar e enviar requisição ✉',cls:'pri',fn:async f=>{
+  if(ARQ)b.push({l:'Salvar e gerar Excel 📊',cls:'pri',fn:async f=>{
     let o=Object.assign({},byId('requisicoes',r.id)||r,canWrite?readForm(F_REQ,f):{});
     if(canWrite){const miss=missing(F_REQ,o);if(miss.length){toast('Preencha: '+miss.join(', '));return}await put('requisicoes',o)}
     closeModal();mailReq(o)}});
   MODAL_CTX=null;
-  openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'e-mail gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
+  openModal({title:esc(join([r.numero,r.item],' — ')),sub:esc(join([obraNomeCod(r.obra),'gerada em '+fmtDY(String(r.criadoEm||'').slice(0,10)),r.emailEm?'Excel gerado '+fmtD(String(r.emailEm).slice(0,10)):''])),
     body:((r.itens||[]).length?`<div class="sec" style="margin-bottom:8px">Materiais (${r.itens.length})</div><table class="lt ro"><thead><tr><th>#</th><th>Material</th><th>Qtd</th><th>Un</th><th>Especificação</th></tr></thead><tbody>${r.itens.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.nome)}</td><td>${esc(numTxt(l.qtd))}</td><td>${esc(l.un||'')}</td><td>${esc(l.espec||'')}</td></tr>`).join('')}</tbody></table><div style="height:14px"></div>`:'')+(()=>{RO_ALLOW=isCompras()?new Set(['status','pedidoNum','previsaoEntrega','pagamento','valorTotal','obs','cnpj']):null;const h=formHTML(F_REQ,r);RO_ALLOW=null;return h})()+(sol?`<div class="note">Gerada a partir da solicitação de cotação <b>${esc(sol.numero)}</b>. <a href="#" data-opensol="${esc(sol.id)}">Abrir solicitação</a></div>`:''),buttons:b});
 }
 
