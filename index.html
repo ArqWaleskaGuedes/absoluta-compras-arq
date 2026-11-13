@@ -1645,17 +1645,18 @@ function xlsHeader(ws,titulo,info,ncols){
   return r+1;
 }
 function xlsTable(ws,r0,cols,rows,opts={}){
-  const hr=ws.getRow(r0);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c.h;cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:c.compras?'FFA98B66':OL}};cell.alignment={wrapText:true,vertical:'middle'};cell.border=brd;ws.getColumn(i+1).width=Math.max(ws.getColumn(i+1).width||0,c.w||14)});hr.height=32;
-  rows.forEach((row,ri)=>{const rr=ws.getRow(r0+1+ri);cols.forEach((c,i)=>{const cell=rr.getCell(i+1);let v=row[c.k];
+  const hr=ws.getRow(r0);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c.h;cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:c.compras?'FFA98B66':OL}};cell.alignment={wrapText:true,vertical:'middle',horizontal:(c.k==='qtd'||c.k==='un')?'center':undefined};cell.border=brd;ws.getColumn(i+1).width=Math.max(ws.getColumn(i+1).width||0,c.w||14)});hr.height=32;
+  rows.forEach((row,ri)=>{const rr=ws.getRow(r0+1+ri);rr.height=22;cols.forEach((c,i)=>{const cell=rr.getCell(i+1);let v=row[c.k];
     if(c.f)v={formula:c.f(r0+1+ri)};
     if(v&&typeof v==='object'&&v.link){cell.value={text:v.text,hyperlink:v.link};cell.font={color:{argb:'FF2B6CB0'},underline:true}}else cell.value=v==null?'':v;
-    cell.alignment={wrapText:true,vertical:'top'};cell.border=brd;if(c.destaque&&cell.value)cell.font={bold:true};if(c.money)cell.numFmt='"R$" #,##0.00';
+    cell.alignment={wrapText:true,vertical:'middle',horizontal:(c.k==='qtd'||c.k==='un')?'center':undefined};cell.border=brd;if(c.destaque&&cell.value)cell.font={bold:true};if(c.money)cell.numFmt='"R$" #,##0.00';
     if(c.compras)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:YEL}};else if(ri%2)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFBF8F2'}}});});
   ws.views=[{state:'frozen',ySplit:r0}];
   return r0+1+rows.length;
 }
 function baixarBlob(blob,nome){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
 async function xlsDownload(wb,nome,msg){
+  wb.eachSheet(ws=>ws.eachRow({includeEmpty:false},row=>row.eachCell(c=>{c.font=Object.assign({},c.font||{},{name:'Calibri',size:(c.font&&c.font.size)||11})})));
   const buf=await wb.xlsx.writeBuffer();const type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';const blob=new Blob([buf],{type});
   nome=nome.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.xlsx';
   let file=null;try{file=new File([blob],nome,{type})}catch(e){}
@@ -1682,7 +1683,7 @@ async function xlsSol(list){
   const wb=new X.Workbook();wb.creator='Arquitetura · Absoluta';
   const ws=wb.addWorksheet('Cotação',{pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
   const obra=list[0].obra,mult=list.length>1;
-  const cols=[{h:'Nº',k:'n',w:5},...(mult?[{h:'Solicitação',k:'sol',w:15}]:[]),{h:'Produto / material',k:'prod',w:30},{h:'Modelo / referência',k:'mod',w:28},{h:'Cor e características',k:'cor',w:24},{h:'Medidas',k:'med',w:16},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6},{h:'Ambiente / aplicação',k:'amb',w:20},...(mult?[{h:'Na obra até',k:'prazo',w:12},{h:'Prioridade',k:'prio',w:11}]:[]),{h:'Fornecedor indicado',k:'forn',w:20},{h:'Contato',k:'cont',w:22},{h:'Projeto',k:'pj',w:12},{h:'Observações',k:'obs',w:28},
+  const cols=[...(mult?[{h:'Solicitação',k:'sol',w:15}]:[]),{h:'Produto / material',k:'prod',w:30},{h:'Modelo / referência',k:'mod',w:28},{h:'Cor e características',k:'cor',w:24},{h:'Medidas',k:'med',w:16},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6},{h:'Ambiente / aplicação',k:'amb',w:20},...(mult?[{h:'Na obra até',k:'prazo',w:12},{h:'Prioridade',k:'prio',w:11}]:[]),{h:'Fornecedor indicado',k:'forn',w:20},{h:'Contato',k:'cont',w:22},{h:'Projeto',k:'pj',w:12},{h:'Observações',k:'obs',w:28},
     {h:'Fornecedor cotado',k:'fc',w:20,compras:true},{h:'Valor unitário (R$)',k:'vu',w:14,compras:true,money:true},{h:'Valor total (R$)',k:'vt',w:15,compras:true,money:true},{h:'Prazo entrega (dias)',k:'pe',w:12,compras:true},{h:'Cond. pagamento',k:'cp',w:16,compras:true}];
   const iq=cols.findIndex(c=>c.k==='qtd')+1,iu=cols.findIndex(c=>c.k==='vu')+1;const L=n=>String.fromCharCode(64+n);
   cols.find(c=>c.k==='vt').f=r=>`IF(${L(iu)}${r}="","",${L(iq)}${r}*${L(iu)}${r})`;
@@ -1703,7 +1704,7 @@ async function xlsSol(list){
 async function xlsReq(r){
   const X=await xlsLib();if(!X){toast('Não foi possível carregar o gerador de Excel.');return}
   const wb=new X.Workbook();const ws=wb.addWorksheet('Requisição',{pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
-  const cols=[{h:'Nº',k:'n',w:5},{h:'Material / item',k:'prod',w:32},{h:'Referência / código',k:'ref',w:26,destaque:1},{h:'Especificação',k:'esp',w:32},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6}];
+  const cols=[{h:'Material / item',k:'prod',w:32},{h:'Referência / código',k:'ref',w:26,destaque:1},{h:'Especificação',k:'esp',w:32},{h:'Qtd',k:'qtd',w:8},{h:'Un',k:'un',w:6}];
   const itens=(r.itens||[]).filter(l=>l.nome);
   let rows;
   if(itens.length){rows=itens.map((l,i)=>({n:i+1,prod:l.nome,ref:l.ref||'',esp:l.espec||'',qtd:l.qtd,un:l.un}))}
