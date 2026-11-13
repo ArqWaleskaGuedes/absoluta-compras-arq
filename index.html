@@ -1483,7 +1483,7 @@ function mailText(d){
     if(b.text)L.push(b.text);
     L.push('');
   });
-  L.push(`Acompanhe no sistema: ${APP_URL}`,'','Obrigada!',`${meNome()} — Arquitetura · Absoluta`);
+  L.push('Obrigada!',`${meNome()} — Arquitetura · Absoluta`);
   return L.join('\n');
 }
 function mailHtml(d){
@@ -1501,7 +1501,7 @@ function mailHtml(d){
     if(b.text)h+=`<p style="margin:8px 0 0">${E(b.text)}</p>`;
     h+='</div>';
   });
-  h+=`<p style="margin:16px 0 4px">Acompanhe no sistema: <a href="${esc(APP_URL)}">${esc(APP_URL)}</a></p><p style="margin:14px 0 0">Obrigada!<br><b>${E(meNome())}</b> — Arquitetura · Absoluta</p></div>`;
+  h+=`<p style="margin:16px 0 0">Obrigada!<br><b>${E(meNome())}</b> — Arquitetura · Absoluta</p></div>`;
   return h;
 }
 function openMail({title,subject,doc,onOpen}){
@@ -1551,7 +1551,7 @@ function solBlocks(s,withResumo){
   if(r.f.some(x=>x[1]))B.push({h:'Fornecedor indicado',rows:r.f});
   return B;
 }
-const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e cotar exatamente com estas especificações.','Retornar a cotação: valor total, prazo de entrega e condição de pagamento — pode responder este e-mail ou registrar no sistema.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
+const PASSOS_SOL=['Fazer o primeiro contato com o fornecedor indicado (ou outros) e cotar exatamente com estas especificações.','Retornar a cotação respondendo este e-mail: valor total, prazo de entrega e condição de pagamento.','Se faltar alguma informação para cotar, falar comigo antes de seguir.'];
 function mailSol(s){
   if(faltando(s).length){openSol(s);setTimeout(()=>markMissing($('#mform')),50);toast('Complete o checklist antes de enviar: '+faltando(s).join(', '));return}
   MAIL_ANX=(s.anexos||[]);
@@ -1587,7 +1587,7 @@ function mailReq(r){
         {h:'Fornecedor',rows:[['Fornecedor',r.fornecedor],['CNPJ',r.cnpj],['Contato',r.contato],['Telefone',r.telefone],['E-mail',r.email]]},
         {h:'Condições',rows:[['Valor total',money(r.valorTotal)],['Pagamento',r.pagamento],['Previsão de entrega',r.previsaoEntrega?fmtDY(r.previsaoEntrega):''],['Local de entrega',r.localEntrega],['Centro de custo',r.centroCusto]]},
         ...(r.obs?[{h:'Observações',text:r.obs}]:[]),
-        {h:'O que precisamos de você',steps:['Emitir o pedido de compra no sistema (ERP) com os dados acima.','Informar o nº do pedido e confirmar a data de entrega — pode responder este e-mail.']}]},
+        {h:'O que precisamos de você',steps:['Emitir o pedido de compra no sistema (ERP) com os dados acima.','Responder este e-mail com o nº do pedido e a data de entrega confirmada.']}]},
     onOpen:()=>{if(canWrite)patch('requisicoes',r.id,{emailEm:nowISO()}).catch(()=>{})}});
 }
 
